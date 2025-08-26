@@ -6,11 +6,11 @@ using Microsoft.IdentityModel.Tokens;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
 using Stamp.Application.Mappings;
+using Stamp.Application.Settings;
 using Stamp.Infrastructure.Data;
 using Stamp.Infrastructure.Repositories;
 using Stamp.Infrastructure.Services;
 using System.Text;
-using Stamp.Application.Settings;
 
 namespace Stamp.Web
 {
