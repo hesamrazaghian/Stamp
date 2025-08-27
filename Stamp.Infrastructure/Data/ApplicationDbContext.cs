@@ -9,16 +9,17 @@ public class ApplicationDbContext : DbContext
     {
     }
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Tenant> Tenants { get; set; } = null!;
+    public DbSet<UserTenant> UserTenants { get; set; } = null!;
+
 
     protected override void OnModelCreating( ModelBuilder modelBuilder )
     {
         // تنظیمات Entity User
         modelBuilder.Entity<User>( entity =>
         {
-            // کلید اصلی
             entity.HasKey( e => e.Id );
 
-            // فیلدهای اجباری
             entity.Property( e => e.Email )
                   .IsRequired( )
                   .HasMaxLength( 256 );
@@ -33,15 +34,33 @@ public class ApplicationDbContext : DbContext
                   .IsRequired( )
                   .HasMaxLength( 50 );
 
-            entity.Property( e => e.TenantId )
-                  .IsRequired( );
-
-            // ایندکس برای ایمیل — برای جستجوی سریع
-            entity.HasIndex( e => new { e.Email, e.TenantId } ).IsUnique( );
-
-            // فیلتر عمومی: فقط کاربرانی که حذف نشدن رو نشون بده
             entity.HasQueryFilter( e => !e.IsDeleted );
         } );
+
+        modelBuilder.Entity<Tenant>( entity =>
+        {
+            entity.HasKey( e => e.Id );
+            entity.Property( e => e.Name ).IsRequired( ).HasMaxLength( 200 );
+            entity.Property( e => e.BusinessType ).HasMaxLength( 100 );
+            entity.HasQueryFilter( e => !e.IsDeleted );
+        } );
+
+        modelBuilder.Entity<UserTenant>( entity =>
+        {
+            entity.HasKey( e => e.Id );
+            entity.HasOne( ut => ut.User )
+                  .WithMany( u => u.UserTenants )
+                  .HasForeignKey( ut => ut.UserId );
+
+            entity.HasOne( ut => ut.Tenant )
+                  .WithMany( t => t.UserTenants )
+                  .HasForeignKey( ut => ut.TenantId );
+
+            entity.HasIndex( ut => new { ut.UserId, ut.TenantId } ).IsUnique( );
+            entity.HasQueryFilter( e => !e.IsDeleted );
+        } );
+
+
 
         base.OnModelCreating( modelBuilder );
     }

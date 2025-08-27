@@ -38,6 +38,9 @@ namespace Stamp.Web
             var jwtSettings = builder.Configuration.GetSection( "JwtSettings" ).Get<JwtSettings>( );
             var key = Encoding.UTF8.GetBytes( jwtSettings.Secret ?? throw new InvalidOperationException( "JWT Secret not configured" ) );
 
+            builder.Services.AddSingleton( jwtSettings );
+            builder.Services.AddScoped<IJwtService, JwtService>( );
+
             builder.Services.AddAuthentication( options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

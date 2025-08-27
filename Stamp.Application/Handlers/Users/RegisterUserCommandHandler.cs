@@ -24,7 +24,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
     public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
     {
         // 1. چک تکراری بودن ایمیل (در سطح Tenant)
-        if( await _userRepository.ExistsByEmailAsync( command.Email, command.TenantId, cancellationToken ) )
+        if( await _userRepository.ExistsByEmailAsync( command.Email, cancellationToken ) )
         {
             throw new Exception( "ایمیل قبلاً ثبت شده است" );
         }
@@ -40,7 +40,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
             Phone = command.Phone,
             PasswordHash = passwordHash,
             Role = command.Role,
-            TenantId = command.TenantId,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -55,7 +54,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
             Email = user.Email,
             Phone = user.Phone,
             Role = user.Role,
-            TenantId = user.TenantId,
             CreatedAt = user.CreatedAt
         };
     }

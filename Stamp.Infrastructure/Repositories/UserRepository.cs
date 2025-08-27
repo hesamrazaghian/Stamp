@@ -1,42 +1,52 @@
-﻿using Stamp.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
 using Stamp.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Stamp.Infrastructure.Repositories;
-
-public class UserRepository : IUserRepository
+namespace Stamp.Infrastructure.Repositories
 {
-    private readonly ApplicationDbContext _context;
-
-    public UserRepository( ApplicationDbContext context )
+    public class UserRepository : IUserRepository
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    public async Task AddAsync( User user, CancellationToken cancellationToken )
-    {
-        await _context.Users.AddAsync( user, cancellationToken );
-        await _context.SaveChangesAsync( cancellationToken );
-    }
+        public UserRepository( ApplicationDbContext context )
+        {
+            _context = context;
+        }
 
-    public async Task<User?> GetByEmailAsync( string email, Guid tenantId, CancellationToken cancellationToken )
-    {
-        return await _context.Users
-            .FirstOrDefaultAsync( u => u.Email == email && u.TenantId == tenantId, cancellationToken );
-    }
+        public async Task AddAsync( User user, CancellationToken cancellationToken )
+        {
+            await _context.Users.AddAsync( user, cancellationToken );
+            await _context.SaveChangesAsync( cancellationToken );
+        }
 
-    public async Task<User?> GetByPhoneAsync( string phone, Guid tenantId, CancellationToken cancellationToken )
-    {
-        return await _context.Users
-            .FirstOrDefaultAsync( u => u.Phone == phone && u.TenantId == tenantId, cancellationToken );
-    }
+        public async Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken )
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync( u => u.Email == email, cancellationToken );
+        }
 
-    public async Task<bool> ExistsByEmailAsync( string email, Guid tenantId, CancellationToken cancellationToken )
-    {
-        return await _context.Users
-            .AnyAsync( u => u.Email == email && u.TenantId == tenantId, cancellationToken );
+        public async Task<User?> GetByEmailAndTenantAsync( string email, Guid tenantId, CancellationToken cancellationToken )
+        {
+            return await _context.Users
+                .Include( u => u.UserTenants )
+                .ThenInclude( ut => ut.Tenant )
+                .FirstOrDefaultAsync( u =>
+                    u.Email == email &&
+                    u.UserTenants.Any( ut => ut.TenantId == tenantId && !ut.IsDeleted ),
+                    cancellationToken );
+        }
+
+        public async Task<bool> ExistsByEmailAsync( string email, CancellationToken cancellationToken )
+        {
+            return await _context.Users
+                .AnyAsync( u => u.Email == email, cancellationToken );
+        }
+
+        public async Task<bool> ExistsInTenantAsync( Guid userId, Guid tenantId, CancellationToken cancellationToken )
+        {
+            return await _context.UserTenants
+                .AnyAsync( ut => ut.UserId == userId && ut.TenantId == tenantId && !ut.IsDeleted, cancellationToken );
+        }
     }
 }

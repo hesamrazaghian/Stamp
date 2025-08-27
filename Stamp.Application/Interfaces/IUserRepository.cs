@@ -1,13 +1,22 @@
 ﻿using Stamp.Domain.Entities;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Stamp.Application.Interfaces;
-
-public interface IUserRepository
+namespace Stamp.Application.Interfaces
 {
-    Task AddAsync( User user, CancellationToken cancellationToken );
-    Task<User?> GetByEmailAsync( string email, Guid tenantId, CancellationToken cancellationToken );
-    Task<User?> GetByPhoneAsync( string phone, Guid tenantId, CancellationToken cancellationToken );
-    Task<bool> ExistsByEmailAsync( string email, Guid tenantId, CancellationToken cancellationToken );
+    public interface IUserRepository
+    {
+        // اضافه کردن کاربر جدید
+        Task AddAsync( User user, CancellationToken cancellationToken );
+
+        // گرفتن کاربر فقط بر اساس ایمیل (سراسری)
+        Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken );
+
+        // گرفتن کاربر همراه Tenant خاص
+        Task<User?> GetByEmailAndTenantAsync( string email, Guid tenantId, CancellationToken cancellationToken );
+
+        // آیا ایمیل کاربر در کل سیستم وجود دارد؟
+        Task<bool> ExistsByEmailAsync( string email, CancellationToken cancellationToken );
+
+        // آیا این کاربر در Tenant خاصی عضویت دارد؟
+        Task<bool> ExistsInTenantAsync( Guid userId, Guid tenantId, CancellationToken cancellationToken );
+    }
 }
