@@ -38,6 +38,9 @@ namespace Stamp.Web
             var jwtSettings = builder.Configuration.GetSection( "JwtSettings" ).Get<JwtSettings>( );
             var key = Encoding.UTF8.GetBytes( jwtSettings.Secret ?? throw new InvalidOperationException( "JWT Secret not configured" ) );
 
+            builder.Services.AddEndpointsApiExplorer( );
+            builder.Services.AddSwaggerGen( );
+
             builder.Services.AddSingleton( jwtSettings );
             builder.Services.AddScoped<IJwtService, JwtService>( );
 
@@ -64,6 +67,12 @@ namespace Stamp.Web
             builder.Services.AddControllers( );
 
             var app = builder.Build( );
+
+            if( app.Environment.IsDevelopment( ) )
+            {
+                app.UseSwagger( );
+                app.UseSwaggerUI( );
+            }
 
             // Configure the HTTP request pipeline
             app.UseHttpsRedirection( );

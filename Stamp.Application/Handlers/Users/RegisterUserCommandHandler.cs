@@ -3,58 +3,77 @@ using Stamp.Application.DTOs;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Stamp.Application.Handlers.Users;
-
-public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
+namespace Stamp.Application.Handlers.Users
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
-
-    public RegisterUserCommandHandler(
-        IUserRepository userRepository,
-        IPasswordHasher passwordHasher )
+    public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
     {
-        _userRepository = userRepository;
-        _passwordHasher = passwordHasher;
-    }
+        private readonly IUserRepository _userRepository;
+        private readonly IPasswordHasher _passwordHasher;
 
-    public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
-    {
-        // 1. چک تکراری بودن ایمیل (در سطح Tenant)
-        if( await _userRepository.ExistsByEmailAsync( command.Email, cancellationToken ) )
+        public RegisterUserCommandHandler(
+            IUserRepository userRepository,
+            IPasswordHasher passwordHasher )
         {
-            throw new Exception( "ایمیل قبلاً ثبت شده است" );
+            _userRepository = userRepository;
+            _passwordHasher = passwordHasher;
         }
 
-        // 2. هش کردن رمز عبور
-        var passwordHash = await _passwordHasher.HashPasswordAsync( command.Password );
-
-        // 3. ساخت کاربر جدید
-        var user = new User
+        public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
         {
-            Id = Guid.NewGuid( ),
-            Email = command.Email,
-            Phone = command.Phone,
-            PasswordHash = passwordHash,
-            Role = command.Role,
-            IsDeleted = false,
-            CreatedAt = DateTime.UtcNow
-        };
+            // 1. جستجوی کاربر با ایمیل (در تمام Tenantها)
+            var existingUser = await _userRepository.GetByEmailAsync( command.Email, cancellationToken );
 
-        // 4. ذخیره کاربر در دیتابیس
-        await _userRepository.AddAsync( user, cancellationToken );
+            if( existingUser != null )
+            {
+                // 2. بررسی اینکه قبلاً در این Tenant عضو شده یا نه
+                var isMember = await _userRepository.ExistsInTenantAsync( existingUser.Id, command.TenantId, cancellationToken );
 
-        // 5. تبدیل به DTO و برگرداندن
-        return new UserDto
-        {
-            Id = user.Id,
-            Email = user.Email,
-            Phone = user.Phone,
-            Role = user.Role,
-            CreatedAt = user.CreatedAt
-        };
+                if( isMember )
+                {
+                    throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
+                }
+
+                // 3. افزودن کاربر به Tenant فعلی
+                await _userRepository.AddToTenantAsync( existingUser.Id, command.TenantId, cancellationToken );
+
+                return new UserDto
+                {
+                    Id = existingUser.Id,
+                    Email = existingUser.Email,
+                    Phone = existingUser.Phone,
+                    Role = existingUser.Role,
+                    CreatedAt = existingUser.CreatedAt
+                };
+            }
+
+            // 4. ایجاد کاربر جدید + ایجاد عضویت در Tenant فعلی
+            var passwordHash = await _passwordHasher.HashPasswordAsync( command.Password );
+
+            var newUser = new User
+            {
+                Id = Guid.NewGuid( ),
+                Email = command.Email,
+                Phone = command.Phone,
+                PasswordHash = passwordHash,
+                Role = command.Role,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.CreateWithTenantAsync( newUser, command.TenantId, cancellationToken );
+
+            return new UserDto
+            {
+                Id = newUser.Id,
+                Email = newUser.Email,
+                Phone = newUser.Phone,
+                Role = newUser.Role,
+                CreatedAt = newUser.CreatedAt
+            };
+        }
     }
 }

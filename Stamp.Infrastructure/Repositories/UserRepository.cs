@@ -48,5 +48,36 @@ namespace Stamp.Infrastructure.Repositories
             return await _context.UserTenants
                 .AnyAsync( ut => ut.UserId == userId && ut.TenantId == tenantId && !ut.IsDeleted, cancellationToken );
         }
+
+        public async Task AddToTenantAsync( Guid userId, Guid tenantId, CancellationToken cancellationToken )
+        {
+            var userTenant = new UserTenant
+            {
+                Id = Guid.NewGuid( ),
+                UserId = userId,
+                TenantId = tenantId,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.UserTenants.AddAsync( userTenant, cancellationToken );
+            await _context.SaveChangesAsync( cancellationToken );
+        }
+
+        public async Task CreateWithTenantAsync( User user, Guid tenantId, CancellationToken cancellationToken )
+        {
+            var userTenant = new UserTenant
+            {
+                Id = Guid.NewGuid( ),
+                UserId = user.Id,
+                TenantId = tenantId,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Users.AddAsync( user, cancellationToken );
+            await _context.UserTenants.AddAsync( userTenant, cancellationToken );
+            await _context.SaveChangesAsync( cancellationToken );
+        }
     }
 }

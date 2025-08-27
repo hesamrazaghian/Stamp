@@ -18,5 +18,11 @@ namespace Stamp.Application.Interfaces
 
         // آیا این کاربر در Tenant خاصی عضویت دارد؟
         Task<bool> ExistsInTenantAsync( Guid userId, Guid tenantId, CancellationToken cancellationToken );
+
+        // افزودن کاربر موجود به یک Tenant
+        Task AddToTenantAsync( Guid userId, Guid tenantId, CancellationToken cancellationToken );
+
+        // ایجاد کاربر جدید همراه با عضویت در یک Tenant
+        Task CreateWithTenantAsync( User user, Guid tenantId, CancellationToken cancellationToken );
     }
 }
