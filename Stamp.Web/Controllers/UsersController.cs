@@ -30,5 +30,19 @@ namespace Stamp.Web.Controllers
 
             return Ok( result );
         }
+
+        /// <summary>
+        /// ورود کاربر و دریافت JWT Token
+        /// </summary>
+        [HttpPost( "login" )]
+        public async Task<ActionResult<string>> Login( [FromBody] LoginUserCommand command )
+        {
+            if( !ModelState.IsValid )
+                return BadRequest( ModelState );
+
+            var token = await _mediator.Send( command );
+            return Ok( token );
+        }
+
     }
 }

@@ -35,8 +35,17 @@ namespace Stamp.Web
             builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
 
             // --- احراز هویت JWT ---
-            var jwtSettings = builder.Configuration.GetSection( "JwtSettings" ).Get<JwtSettings>( );
-            var key = Encoding.UTF8.GetBytes( jwtSettings.Secret ?? throw new InvalidOperationException( "JWT Secret not configured" ) );
+            // --- احراز هویت JWT ---
+            var jwtSettings = builder.Configuration
+                .GetSection( "JwtSettings" )
+                .Get<JwtSettings>( )
+                ?? throw new InvalidOperationException( "JwtSettings section not found in configuration" );
+
+            if( string.IsNullOrWhiteSpace( jwtSettings.Secret ) )
+                throw new InvalidOperationException( "JWT Secret is not configured" );
+
+            var key = Encoding.UTF8.GetBytes( jwtSettings.Secret );
+
 
             builder.Services.AddEndpointsApiExplorer( );
             builder.Services.AddSwaggerGen( );
