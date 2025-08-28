@@ -45,8 +45,10 @@ namespace Stamp.Application.Handlers.Users
             return _jwtService.GenerateToken(
                 user.Id,
                 tenantId,
-                user.Role
+                user.Role,
+                user.Email // ✅ ارسال ایمیل
             );
+
         }
     }
 }

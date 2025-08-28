@@ -16,29 +16,27 @@ public class JwtService : IJwtService
         _jwtSettings = jwtSettings;
     }
 
-    public string GenerateToken( Guid userId, Guid tenantId, string role )
+    public string GenerateToken( Guid userId, Guid tenantId, string role, string email )
     {
-        // 1. ساخت Claimها
         var claims = new[ ]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim("TenantId", tenantId.ToString()), // برای Multi-Tenant
-            new Claim(ClaimTypes.Role, role),          // برای دسترسی‌ها
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // جلوگیری از Replay Attack
-        };
+        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, email), // ✅ ایمیل اضافه شد
+        new Claim("TenantId", tenantId.ToString()),
+        new Claim(ClaimTypes.Role, role),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
 
-        // 2. ساخت کلید امنیتی
         var key = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( _jwtSettings.Secret ) );
         var creds = new SigningCredentials( key, SecurityAlgorithms.HmacSha256 );
 
-        // 3. ساخت توکن
         var token = new JwtSecurityToken(
             claims: claims,
             expires: DateTime.Now.AddMinutes( _jwtSettings.TokenLifetimeMinutes ),
             signingCredentials: creds
         );
 
-        // 4. برگرداندن توکن به صورت رشته
         return new JwtSecurityTokenHandler( ).WriteToken( token );
     }
+
 }
