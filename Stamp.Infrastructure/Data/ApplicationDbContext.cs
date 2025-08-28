@@ -7,15 +7,19 @@ namespace Stamp.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    private readonly ICurrentTenantService _currentTenantService;
+    private readonly ICurrentTenantService? _currentTenantService;
 
-    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options,
-        ICurrentTenantService currentTenantService )
+    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options, ICurrentTenantService currentTenantService )
         : base( options )
     {
         _currentTenantService = currentTenantService;
     }
 
+    // کانستراکتور برای Migration و Design‑Time
+    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options )
+        : base( options )
+    {
+    }
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Tenant> Tenants { get; set; } = null!;
@@ -23,6 +27,14 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating( ModelBuilder modelBuilder )
     {
+        // ✅ فیلتر TenantId فقط وقتی سرویس Tenant مشخصه
+        if( _currentTenantService != null )
+        {
+            modelBuilder.Entity<User>( )
+                .HasQueryFilter( u => u.UserTenants
+                    .Any( ut => ut.TenantId == _currentTenantService.TenantId ) );
+        }
+
         // ✅ فیلتر جهانی Soft Delete برای همه موجودیت‌هایی که از BaseEntity ارث‌بری کرده‌اند
         foreach( var entityType in modelBuilder.Model.GetEntityTypes( ) )
         {
@@ -84,10 +96,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex( ut => new { ut.UserId, ut.TenantId } ).IsUnique( );
         } );
 
-        modelBuilder.Entity<User>( )
-            .HasQueryFilter( u => u.UserTenants.Any( ut => ut.TenantId == _currentTenantService.TenantId ) );
-
-
         base.OnModelCreating( modelBuilder );
     }
+
 }
