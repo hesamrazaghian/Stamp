@@ -1,14 +1,21 @@
-﻿using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace Stamp.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options ) : base( options )
+    private readonly ICurrentTenantService _currentTenantService;
+
+    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options,
+        ICurrentTenantService currentTenantService )
+        : base( options )
     {
+        _currentTenantService = currentTenantService;
     }
+
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Tenant> Tenants { get; set; } = null!;
@@ -76,6 +83,10 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex( ut => new { ut.UserId, ut.TenantId } ).IsUnique( );
         } );
+
+        modelBuilder.Entity<User>( )
+            .HasQueryFilter( u => u.UserTenants.Any( ut => ut.TenantId == _currentTenantService.TenantId ) );
+
 
         base.OnModelCreating( modelBuilder );
     }

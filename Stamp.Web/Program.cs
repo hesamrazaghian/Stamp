@@ -33,6 +33,9 @@ namespace Stamp.Web
 
             builder.Services.AddScoped<IUserRepository, UserRepository>( );
             builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
+            builder.Services.AddHttpContextAccessor( );
+            builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>( );
+
 
             // --- احراز هویت JWT ---
             // --- احراز هویت JWT ---
