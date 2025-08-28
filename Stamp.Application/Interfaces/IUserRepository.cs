@@ -24,5 +24,8 @@ namespace Stamp.Application.Interfaces
 
         // ایجاد کاربر جدید همراه با عضویت در یک Tenant
         Task CreateWithTenantAsync( User user, Guid tenantId, CancellationToken cancellationToken );
+        // گرفتن کاربر همراه همه Tenantها
+        Task<User?> GetWithTenantsAsync( Guid userId, CancellationToken cancellationToken );
+
     }
 }

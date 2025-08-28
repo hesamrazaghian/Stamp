@@ -79,5 +79,13 @@ namespace Stamp.Infrastructure.Repositories
             await _context.UserTenants.AddAsync( userTenant, cancellationToken );
             await _context.SaveChangesAsync( cancellationToken );
         }
+
+        public async Task<User?> GetWithTenantsAsync( Guid userId, CancellationToken cancellationToken )
+        {
+            return await _context.Users
+                .Include( u => u.UserTenants )
+                .ThenInclude( ut => ut.Tenant )
+                .FirstOrDefaultAsync( u => u.Id == userId, cancellationToken );
+        }
     }
 }

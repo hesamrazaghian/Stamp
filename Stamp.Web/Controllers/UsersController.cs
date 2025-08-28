@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Stamp.Application.Queries.Users;
 
 namespace Stamp.Web.Controllers
 {
@@ -43,6 +45,22 @@ namespace Stamp.Web.Controllers
             var token = await _mediator.Send( command );
             return Ok( token );
         }
+
+        /// <summary>
+        /// دریافت پروفایل کاربر جاری
+        /// </summary>
+        [Authorize]
+        [HttpGet( "me" )]
+        public async Task<ActionResult<UserProfileDto>> GetMe( )
+        {
+            var userIdClaim = User.FindFirst( "UserId" )?.Value;
+            if( string.IsNullOrEmpty( userIdClaim ) || !Guid.TryParse( userIdClaim, out var userId ) )
+                return Unauthorized( );
+
+            var result = await _mediator.Send( new GetCurrentUserQuery { UserId = userId } );
+            return Ok( result );
+        }
+
 
     }
 }

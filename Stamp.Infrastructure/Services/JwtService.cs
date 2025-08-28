@@ -20,10 +20,11 @@ public class JwtService : IJwtService
     {
         var claims = new[ ]
         {
-        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, email), // ✅ ایمیل اضافه شد
+        new Claim("UserId", userId.ToString()),             // مهم برای /me
         new Claim("TenantId", tenantId.ToString()),
         new Claim(ClaimTypes.Role, role),
+        new Claim(ClaimTypes.Email, email),
+        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
 
@@ -38,5 +39,6 @@ public class JwtService : IJwtService
 
         return new JwtSecurityTokenHandler( ).WriteToken( token );
     }
+
 
 }

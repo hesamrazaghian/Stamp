@@ -24,21 +24,24 @@ namespace Stamp.Application.Handlers.Users
 
         public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
         {
-            // 1. جستجوی کاربر با ایمیل (در تمام Tenantها)
+            // 1. جستجوی کاربر با ایمیل (global)
             var existingUser = await _userRepository.GetByEmailAsync( command.Email, cancellationToken );
 
             if( existingUser != null )
             {
-                // 2. بررسی اینکه قبلاً در این Tenant عضو شده یا نه
-                var isMember = await _userRepository.ExistsInTenantAsync( existingUser.Id, command.TenantId, cancellationToken );
-
-                if( isMember )
+                if( command.TenantId.HasValue )
                 {
-                    throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
-                }
+                    // 2. آیا کاربر عضو این Tenant شده؟
+                    var isMember = await _userRepository.ExistsInTenantAsync( existingUser.Id, command.TenantId.Value, cancellationToken );
 
-                // 3. افزودن کاربر به Tenant فعلی
-                await _userRepository.AddToTenantAsync( existingUser.Id, command.TenantId, cancellationToken );
+                    if( isMember )
+                    {
+                        throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
+                    }
+
+                    // 3. افزودن به Tenant جدید
+                    await _userRepository.AddToTenantAsync( existingUser.Id, command.TenantId.Value, cancellationToken );
+                }
 
                 return new UserDto
                 {
@@ -50,7 +53,7 @@ namespace Stamp.Application.Handlers.Users
                 };
             }
 
-            // 4. ایجاد کاربر جدید + ایجاد عضویت در Tenant فعلی
+            // 4. ایجاد کاربر جدید
             var passwordHash = await _passwordHasher.HashPasswordAsync( command.Password );
 
             var newUser = new User
@@ -64,7 +67,16 @@ namespace Stamp.Application.Handlers.Users
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _userRepository.CreateWithTenantAsync( newUser, command.TenantId, cancellationToken );
+            // اگر TenantId داده شده → ایجاد با Tenant
+            if( command.TenantId.HasValue )
+            {
+                await _userRepository.CreateWithTenantAsync( newUser, command.TenantId.Value, cancellationToken );
+            }
+            else
+            {
+                // بدون Tenant
+                await _userRepository.AddAsync( newUser, cancellationToken );
+            }
 
             return new UserDto
             {

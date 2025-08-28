@@ -46,9 +46,8 @@ namespace Stamp.Application.Handlers.Users
                 user.Id,
                 tenantId,
                 user.Role,
-                user.Email // ✅ ارسال ایمیل
+                user.Email // اضافه شد
             );
-
         }
     }
 }
