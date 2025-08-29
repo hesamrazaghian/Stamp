@@ -24,12 +24,9 @@ namespace Stamp.Web.Controllers
         [HttpPost( "register" )]
         public async Task<ActionResult<UserDto>> Register( [FromBody] RegisterUserCommand command )
         {
-            // اعتبارسنجی مدل (FluentValidation هم اینجا اعمال میشه)
-            if( !ModelState.IsValid )
-                return BadRequest( ModelState );
+            // نیازی به ModelState.IsValid نیست چون FluentValidation فعال است
 
             var result = await _mediator.Send( command );
-
             return Ok( result );
         }
 
@@ -37,13 +34,11 @@ namespace Stamp.Web.Controllers
         /// ورود کاربر و دریافت JWT Token
         /// </summary>
         [HttpPost( "login" )]
-        public async Task<ActionResult<string>> Login( [FromBody] LoginUserCommand command )
+        public async Task<ActionResult> Login( [FromBody] LoginUserCommand command )
         {
-            if( !ModelState.IsValid )
-                return BadRequest( ModelState );
-
+            // اعتبارسنجی هم با FluentValidation انجام می‌شود
             var token = await _mediator.Send( command );
-            return Ok( token );
+            return Ok( new { Token = token } ); // خروجی استاندارد JSON
         }
 
         /// <summary>
@@ -60,7 +55,5 @@ namespace Stamp.Web.Controllers
             var result = await _mediator.Send( new GetCurrentUserQuery { UserId = userId } );
             return Ok( result );
         }
-
-
     }
 }

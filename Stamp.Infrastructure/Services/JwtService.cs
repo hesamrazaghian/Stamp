@@ -5,40 +5,42 @@ using System.Text;
 using Stamp.Application.Interfaces;
 using Stamp.Application.Settings;
 
-namespace Stamp.Infrastructure.Services;
-
-public class JwtService : IJwtService
+namespace Stamp.Infrastructure.Services
 {
-    private readonly JwtSettings _jwtSettings;
-
-    public JwtService( JwtSettings jwtSettings )
+    /// <summary>
+    /// سرویس تولید JWT
+    /// </summary>
+    public class JwtService : IJwtService
     {
-        _jwtSettings = jwtSettings;
-    }
+        private readonly JwtSettings _jwtSettings;
 
-    public string GenerateToken( Guid userId, Guid tenantId, string role, string email )
-    {
-        var claims = new[ ]
+        public JwtService( JwtSettings jwtSettings )
         {
-        new Claim("UserId", userId.ToString()),             // مهم برای /me
-        new Claim("TenantId", tenantId.ToString()),
-        new Claim(ClaimTypes.Role, role),
-        new Claim(ClaimTypes.Email, email),
-        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
+            _jwtSettings = jwtSettings;
+        }
 
-        var key = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( _jwtSettings.Secret ) );
-        var creds = new SigningCredentials( key, SecurityAlgorithms.HmacSha256 );
+        public string GenerateToken( Guid userId, Guid tenantId, string role, string email )
+        {
+            var claims = new[ ]
+            {
+                new Claim("UserId", userId.ToString()),
+                new Claim("TenantId", tenantId.ToString()),
+                new Claim(ClaimTypes.Role, role),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.Now.AddMinutes( _jwtSettings.TokenLifetimeMinutes ),
-            signingCredentials: creds
-        );
+            var key = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( _jwtSettings.Secret ) );
+            var creds = new SigningCredentials( key, SecurityAlgorithms.HmacSha256 );
 
-        return new JwtSecurityTokenHandler( ).WriteToken( token );
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes( _jwtSettings.TokenLifetimeMinutes ), // UtcNow مهم
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler( ).WriteToken( token );
+        }
     }
-
-
 }

@@ -1,10 +1,12 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
-using Stamp.Domain.Entities;
 
 namespace Stamp.Application.Handlers.Users
 {
+    /// <summary>
+    /// رسیدگی به درخواست ورود کاربر
+    /// </summary>
     public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, string>
     {
         private readonly IUserRepository _userRepository;
@@ -23,31 +25,24 @@ namespace Stamp.Application.Handlers.Users
 
         public async Task<string> Handle( LoginUserCommand request, CancellationToken cancellationToken )
         {
-            // اگر Multi-Tenant هستیم:
             var user = await _userRepository.GetByEmailAndTenantAsync(
                 request.Email,
-                request.TenantId,   // این باید توی LoginUserCommand موجود باشه
+                request.TenantId,
                 cancellationToken );
 
             if( user == null )
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
-            var passwordValid = await _passwordHasher.VerifyPasswordAsync(
-                user.PasswordHash,
-                request.Password );
+            var passwordValid = await _passwordHasher.VerifyPasswordAsync( user.PasswordHash, request.Password );
 
             if( !passwordValid )
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
-            // گرفتن TenantId از ورودی یا مرتبط با کاربر
-            var tenantId = request.TenantId;
-
             return _jwtService.GenerateToken(
                 user.Id,
-                tenantId,
+                request.TenantId,
                 user.Role,
-                user.Email // اضافه شد
-            );
+                user.Email );
         }
     }
 }
