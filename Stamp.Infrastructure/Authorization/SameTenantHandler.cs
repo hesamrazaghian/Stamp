@@ -1,41 +1,39 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Stamp.Application.Authorization;
-using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Stamp.Application.Authorization;
 
-namespace Stamp.Infrastructure.Authorization
+namespace Stamp.Infrastructure.Authorization;
+
+public class SameTenantHandler : AuthorizationHandler<SameTenantRequirement, Guid>
 {
-    /// <summary>
-    /// بررسی می‌کند که TenantId کاربر با tenantId موجود در مسیر درخواست یکی باشد.
-    /// </summary>
-    public class SameTenantHandler : AuthorizationHandler<SameTenantRequirement>
-    {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SameTenantHandler( IHttpContextAccessor httpContextAccessor )
+    public SameTenantHandler( IHttpContextAccessor httpContextAccessor )
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        SameTenantRequirement requirement,
+        Guid resourceTenantId )
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if( httpContext == null )
         {
-            _httpContextAccessor = httpContextAccessor;
+            return Task.CompletedTask;
         }
 
-        protected override Task HandleRequirementAsync(
-            AuthorizationHandlerContext context,
-            SameTenantRequirement requirement )
+        var tenantClaim = context.User.FindFirst( "TenantId" )?.Value;
+        if( tenantClaim != null && Guid.TryParse( tenantClaim, out var userTenantId ) )
         {
-            var tenantIdClaim = context.User.FindFirst( "TenantId" )?.Value;
-
-            var routeTenantId = _httpContextAccessor.HttpContext?
-                .GetRouteData( )?.Values[ "tenantId" ]?.ToString( );
-
-            if( !string.IsNullOrEmpty( tenantIdClaim ) &&
-                !string.IsNullOrEmpty( routeTenantId ) &&
-                string.Equals( tenantIdClaim, routeTenantId, StringComparison.OrdinalIgnoreCase ) )
+            if( userTenantId == resourceTenantId )
             {
                 context.Succeed( requirement );
             }
-
-            return Task.CompletedTask;
         }
+        return Task.CompletedTask;
     }
 }

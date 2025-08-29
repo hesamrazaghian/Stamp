@@ -38,8 +38,12 @@ namespace Stamp.Web
             builder.Services.AddFluentValidationAutoValidation( );           // فعال‌سازی ولیدیشن سمت سرور
             builder.Services.AddFluentValidationClientsideAdapters( );       // فعال‌سازی ولیدیشن سمت کلاینت
 
-            // ثبت AutoMapper برای مپینگ DTOها
-            builder.Services.AddAutoMapper( typeof( UserProfile ).Assembly );
+            // ✅ اصلاح خطای AutoMapper (سینتکس صحیح برای نسخه 12.0.1)
+            builder.Services.AddAutoMapper( cfg =>
+            {
+                cfg.AddProfile<UserProfile>( );
+                cfg.AddProfile<TenantProfile>( ); // ✅ اضافه شده: ثبت TenantProfile
+            }, typeof( UserProfile ).Assembly );
             #endregion
 
             #region 🗃️ تنظیم DI برای لایه Infrastructure (زیرساخت)
@@ -50,6 +54,9 @@ namespace Stamp.Web
             // ثبت ریپازیتوری‌ها و سرویس‌های زیرساخت
             builder.Services.AddScoped<IUserRepository, UserRepository>( );
             builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
+
+            // ✅ اضافه شده: ثبت ITenantRepository
+            builder.Services.AddScoped<ITenantRepository, TenantRepository>( );
 
             // ثبت سرویس Tenant جاری برای استفاده در فیلترهای جهانی
             builder.Services.AddScoped<ICurrentTenantService, CurrentTenantService>( );
@@ -75,7 +82,7 @@ namespace Stamp.Web
             #endregion
 
             #region 🛡️ تنظیمات احراز هویت و مجوزدهی
-            // پیکربندی سیستم احراز هویت با JWT
+            // ✅ اصلاح خطای JwtBearer (برای نسخه 8.0.8)
             builder.Services.AddAuthentication( options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -85,8 +92,11 @@ namespace Stamp.Web
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    // ✅ افزوده شده: تعریف Issuer و Audience برای امنیت بیشتر
+                    ValidIssuer = jwtSettings.Issuer ?? "StampApi",
+                    ValidAudience = jwtSettings.Audience ?? "StampClient",
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey( key ),
@@ -117,6 +127,17 @@ namespace Stamp.Web
             // فعال‌سازی Swagger برای مستندسازی API
             builder.Services.AddSwaggerGen( );
 
+            // ✅ اضافه شده: تنظیمات CORS (ضروری برای رفع خطای Failed to fetch)
+            builder.Services.AddCors( options =>
+            {
+                options.AddDefaultPolicy( policy =>
+                {
+                    policy.AllowAnyOrigin( )
+                          .AllowAnyHeader( )
+                          .AllowAnyMethod( );
+                } );
+            } );
+
             // ثبت کنترلرها
             builder.Services.AddControllers( );
             #endregion
@@ -124,6 +145,9 @@ namespace Stamp.Web
             var app = builder.Build( );
 
             #region 🌐 پیکربندی Pipeline درخواست‌ها
+            // ✅ اضافه شده: UseCors باید قبل از Authentication باشد
+            app.UseCors( );
+
             // فعال‌سازی Swagger فقط در محیط توسعه
             if( app.Environment.IsDevelopment( ) )
             {

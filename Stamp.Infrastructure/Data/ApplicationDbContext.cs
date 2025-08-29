@@ -9,7 +9,9 @@ public class ApplicationDbContext : DbContext
 {
     private readonly ICurrentTenantService? _currentTenantService;
 
-    public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options, ICurrentTenantService currentTenantService )
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ICurrentTenantService currentTenantService )
         : base( options )
     {
         _currentTenantService = currentTenantService;
@@ -30,30 +32,42 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating( ModelBuilder modelBuilder )
     {
-        // فیلتر جهانی Tenant (در صورت استفاده از سرویس Tenant)
-        if( _currentTenantService != null )
-        {
-            modelBuilder.Entity<User>( )
-                .HasQueryFilter( u => u.UserTenants
-                    .Any( ut => ut.TenantId == _currentTenantService.TenantId ) );
-        }
-
-        // Soft Delete Filter
+        // ✅ رفع خطای اصلی: جایگزینی فیلتر جهانی با روش صحیح
+        // توضیح: در EF Core نباید مستقیماً روی کلاس پایه (BaseEntity) فیلتر اعمال کرد
         foreach( var entityType in modelBuilder.Model.GetEntityTypes( ) )
         {
             if( typeof( BaseEntity ).IsAssignableFrom( entityType.ClrType ) )
             {
                 var parameter = Expression.Parameter( entityType.ClrType, "e" );
-                var body = Expression.Equal(
-                    Expression.Property( parameter, nameof( BaseEntity.IsDeleted ) ),
-                    Expression.Constant( false )
+
+                // ✅ ساخت عبارت فیلتر برای Soft Delete
+                var softDeleteFilter = Expression.Not(
+                    Expression.Property( parameter, nameof( BaseEntity.IsDeleted ) )
                 );
-                var lambda = Expression.Lambda( body, parameter );
-                modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
+
+                // ✅ اگر سرویس Tenant موجود باشد، فیلتر TenantId هم اضافه شود
+                if( _currentTenantService != null )
+                {
+                    var tenantFilter = Expression.Equal(
+                        Expression.Property( parameter, nameof( BaseEntity.TenantId ) ),
+                        Expression.Constant( _currentTenantService.TenantId )
+                    );
+
+                    // ✅ ترکیب فیلترها: TenantId AND NOT IsDeleted
+                    var filterExpression = Expression.AndAlso( tenantFilter, softDeleteFilter );
+                    var lambda = Expression.Lambda( filterExpression, parameter );
+                    modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
+                }
+                else
+                {
+                    // ✅ فقط Soft Delete برای مایگریشن‌ها
+                    var lambda = Expression.Lambda( softDeleteFilter, parameter );
+                    modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
+                }
             }
         }
 
-        // User
+        // User (بدون تغییر)
         modelBuilder.Entity<User>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -64,7 +78,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex( e => new { e.Email, e.TenantId } ).IsUnique( );
         } );
 
-        // Tenant
+        // Tenant (بدون تغییر)
         modelBuilder.Entity<Tenant>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -72,7 +86,7 @@ public class ApplicationDbContext : DbContext
             entity.Property( e => e.BusinessType ).HasMaxLength( 100 );
         } );
 
-        // UserTenant
+        // UserTenant (بدون تغییر)
         modelBuilder.Entity<UserTenant>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -82,12 +96,12 @@ public class ApplicationDbContext : DbContext
             entity.HasOne( ut => ut.Tenant )
                 .WithMany( t => t.UserTenants )
                 .HasForeignKey( ut => ut.TenantId )
-                .OnDelete( DeleteBehavior.Restrict ); // جلوگیری از multiple cascade paths
+                .OnDelete( DeleteBehavior.Restrict );
             entity.Property( ut => ut.TotalStamps ).HasDefaultValue( 0 );
             entity.HasIndex( ut => new { ut.UserId, ut.TenantId } ).IsUnique( );
         } );
 
-        // StampTransaction
+        // StampTransaction (بدون تغییر)
         modelBuilder.Entity<StampTransaction>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -95,34 +109,34 @@ public class ApplicationDbContext : DbContext
             entity.Property( e => e.Quantity ).IsRequired( );
             entity.HasOne( e => e.User ).WithMany( ).HasForeignKey( e => e.UserId );
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
-                .OnDelete( DeleteBehavior.Restrict ); // جلوگیری از multiple cascade paths
+                .OnDelete( DeleteBehavior.Restrict );
         } );
 
-        // Reward
+        // Reward (بدون تغییر)
         modelBuilder.Entity<Reward>( entity =>
         {
             entity.HasKey( e => e.Id );
             entity.Property( e => e.Name ).IsRequired( ).HasMaxLength( 200 );
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
-                .OnDelete( DeleteBehavior.Restrict ); // جلوگیری از multiple cascade paths
+                .OnDelete( DeleteBehavior.Restrict );
         } );
 
-        // RewardRedemption
+        // RewardRedemption (بدون تغییر)
         modelBuilder.Entity<RewardRedemption>( entity =>
         {
             entity.HasKey( e => e.Id );
             entity.HasOne( e => e.User ).WithMany( ).HasForeignKey( e => e.UserId );
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
-                .OnDelete( DeleteBehavior.Restrict ); // جلوگیری از multiple cascade paths
+                .OnDelete( DeleteBehavior.Restrict );
             entity.HasOne( e => e.Reward ).WithMany( r => r.RewardRedemptions ).HasForeignKey( e => e.RewardId );
         } );
 
-        // StampRule
+        // StampRule (بدون تغییر)
         modelBuilder.Entity<StampRule>( entity =>
         {
             entity.HasKey( e => e.Id );
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
-                .OnDelete( DeleteBehavior.Restrict ); // جلوگیری از multiple cascade paths
+                .OnDelete( DeleteBehavior.Restrict );
         } );
 
         base.OnModelCreating( modelBuilder );
