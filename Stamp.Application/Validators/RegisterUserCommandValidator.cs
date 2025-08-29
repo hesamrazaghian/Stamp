@@ -17,6 +17,8 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterUserComman
             .MinimumLength( 8 ).WithMessage( "رمز عبور باید حداقل 8 کاراکتر باشد" );
 
         RuleFor( x => x.TenantId )
-            .NotEmpty( ).WithMessage( "شناسه سازمان الزامی است" );
+            .NotEmpty( ).WithMessage( "شناسه سازمان الزامی است" )
+            .When( x => x.TenantId.HasValue ); // ✅ این روش صحیحه
+
     }
 }

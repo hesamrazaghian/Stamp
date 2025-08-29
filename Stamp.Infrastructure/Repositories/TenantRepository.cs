@@ -1,4 +1,5 @@
-﻿using Stamp.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
 using Stamp.Infrastructure.Data;
 using System;
@@ -29,5 +30,12 @@ public class TenantRepository : ITenantRepository
     public async Task SaveChangesAsync( CancellationToken cancellationToken )
     {
         await _context.SaveChangesAsync( cancellationToken );
+    }
+
+    public async Task<List<Tenant>> GetAllAsync( CancellationToken cancellationToken )
+    {
+        return await _context.Tenants
+            .Where( t => !t.IsDeleted )
+            .ToListAsync( cancellationToken );
     }
 }

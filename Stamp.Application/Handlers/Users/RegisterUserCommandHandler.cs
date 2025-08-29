@@ -12,13 +12,16 @@ namespace Stamp.Application.Handlers.Users
     public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
     {
         private readonly IUserRepository _userRepository;
+        private readonly ITenantRepository _tenantRepository; // ✅ اضافه شده
         private readonly IPasswordHasher _passwordHasher;
 
         public RegisterUserCommandHandler(
             IUserRepository userRepository,
+            ITenantRepository tenantRepository, // ✅ اضافه شده
             IPasswordHasher passwordHasher )
         {
             _userRepository = userRepository;
+            _tenantRepository = tenantRepository; // ✅ اضافه شده
             _passwordHasher = passwordHasher;
         }
 
@@ -62,7 +65,7 @@ namespace Stamp.Application.Handlers.Users
                 Email = command.Email,
                 Phone = command.Phone,
                 PasswordHash = passwordHash,
-                Role = command.Role,
+                Role = "User", // ✅ تغییر: از command.Role به "User" (موقت)
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -70,11 +73,16 @@ namespace Stamp.Application.Handlers.Users
             // اگر TenantId داده شده → ایجاد با Tenant
             if( command.TenantId.HasValue )
             {
+                // ✅ اضافه شده: بررسی وجود Tenant
+                var tenant = await _tenantRepository.GetByIdAsync( command.TenantId.Value, cancellationToken );
+                if( tenant == null )
+                    throw new Exception( "Tenant not found" );
+
                 await _userRepository.CreateWithTenantAsync( newUser, command.TenantId.Value, cancellationToken );
             }
             else
             {
-                // بدون Tenant
+                // بدون Tenant (کاربر مهمان)
                 await _userRepository.AddAsync( newUser, cancellationToken );
             }
 

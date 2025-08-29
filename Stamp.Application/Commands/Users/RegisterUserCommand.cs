@@ -9,5 +9,5 @@ public class RegisterUserCommand : IRequest<UserDto>
     public string Phone { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string Role { get; set; } = "Customer";
-    public Guid? TenantId { get; set; } // ✅ Nullable برای سناریوی بدون فروشگاه
+    public Guid? TenantId { get; set; }
 }
