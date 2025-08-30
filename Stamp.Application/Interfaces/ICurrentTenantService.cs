@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Stamp.Application.Interfaces
+namespace Stamp.Application.Interfaces;
+
+public interface ICurrentTenantService
 {
-    public interface ICurrentTenantService
-    {
-        Guid TenantId { get; }
-    }
+    Guid? GetCurrentTenantId( );
 }

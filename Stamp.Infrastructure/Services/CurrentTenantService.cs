@@ -1,24 +1,23 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using Stamp.Application.Interfaces;
 
-namespace Stamp.Infrastructure.Services
+namespace Stamp.Infrastructure.Services;
+
+public class CurrentTenantService : ICurrentTenantService
 {
-    public class CurrentTenantService : ICurrentTenantService
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public CurrentTenantService( IHttpContextAccessor httpContextAccessor )
     {
-        public Guid TenantId { get; }
+        _httpContextAccessor = httpContextAccessor;
+    }
 
-        public CurrentTenantService( IHttpContextAccessor httpContextAccessor )
-        {
-            var tenantClaim = httpContextAccessor.HttpContext?.User?
-                .FindFirst( "TenantId" )?.Value;
+    public Guid? GetCurrentTenantId( )
+    {
+        var tenantIdClaim = _httpContextAccessor.HttpContext?
+            .User.FindFirst( "TenantId" )?.Value;
 
-            if( !string.IsNullOrEmpty( tenantClaim ) && Guid.TryParse( tenantClaim, out var tenantId ) )
-                TenantId = tenantId;
-            else
-                TenantId = Guid.Empty; // یا می‌تونی Exception بندازی
-        }
+        return Guid.TryParse( tenantIdClaim, out var tenantId ) ? tenantId : ( Guid? )null;
     }
 }

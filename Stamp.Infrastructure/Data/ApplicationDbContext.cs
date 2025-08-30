@@ -1,21 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
+using System;
 using System.Linq.Expressions;
 
 namespace Stamp.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    private readonly ICurrentTenantService? _currentTenantService;
-
-    public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options,
-        ICurrentTenantService currentTenantService )
-        : base( options )
-    {
-        _currentTenantService = currentTenantService;
-    }
+    // ✅ این پراپرتی رو اضافه کن (حیاتی برای فیلتر جهانی)
+    public Guid? CurrentTenantId { get; set; }
 
     public ApplicationDbContext( DbContextOptions<ApplicationDbContext> options )
         : base( options )
@@ -32,42 +25,64 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating( ModelBuilder modelBuilder )
     {
-        // ✅ رفع خطای اصلی: جایگزینی فیلتر جهانی با روش صحیح
-        // توضیح: در EF Core نباید مستقیماً روی کلاس پایه (BaseEntity) فیلتر اعمال کرد
+        // ✅ فیلتر جهانی برای Soft Delete (برای تمام موجودیت‌های دارای IsDeleted)
         foreach( var entityType in modelBuilder.Model.GetEntityTypes( ) )
         {
-            if( typeof( BaseEntity ).IsAssignableFrom( entityType.ClrType ) )
+            if( typeof( BaseEntity ).IsAssignableFrom( entityType.ClrType ) &&
+                entityType.ClrType.GetProperty( "IsDeleted" ) != null )
             {
                 var parameter = Expression.Parameter( entityType.ClrType, "e" );
-
-                // ✅ ساخت عبارت فیلتر برای Soft Delete
-                var softDeleteFilter = Expression.Not(
-                    Expression.Property( parameter, nameof( BaseEntity.IsDeleted ) )
-                );
-
-                // ✅ اگر سرویس Tenant موجود باشد، فیلتر TenantId هم اضافه شود
-                if( _currentTenantService != null )
-                {
-                    var tenantFilter = Expression.Equal(
-                        Expression.Property( parameter, nameof( BaseEntity.TenantId ) ),
-                        Expression.Constant( _currentTenantService.TenantId )
-                    );
-
-                    // ✅ ترکیب فیلترها: TenantId AND NOT IsDeleted
-                    var filterExpression = Expression.AndAlso( tenantFilter, softDeleteFilter );
-                    var lambda = Expression.Lambda( filterExpression, parameter );
-                    modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
-                }
-                else
-                {
-                    // ✅ فقط Soft Delete برای مایگریشن‌ها
-                    var lambda = Expression.Lambda( softDeleteFilter, parameter );
-                    modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
-                }
+                var isDeletedProperty = Expression.Property( parameter, "IsDeleted" );
+                var filter = Expression.Equal( isDeletedProperty, Expression.Constant( false ) );
+                var lambda = Expression.Lambda( filter, parameter );
+                modelBuilder.Entity( entityType.ClrType ).HasQueryFilter( lambda );
             }
         }
 
-        // User (بدون تغییر)
+        // ✅ فیلتر جهانی برای TenantId (فقط برای موجودیت‌های دارای TenantId)
+        ApplyTenantFilter<UserTenant>( modelBuilder );
+        ApplyTenantFilter<StampTransaction>( modelBuilder );
+        ApplyTenantFilter<Reward>( modelBuilder );
+        ApplyTenantFilter<RewardRedemption>( modelBuilder );
+        ApplyTenantFilter<StampRule>( modelBuilder );
+
+        // تنظیمات موجودیت‌ها بدون تغییر
+        ConfigureUserEntity( modelBuilder );
+        ConfigureTenantEntity( modelBuilder );
+        ConfigureUserTenantEntity( modelBuilder );
+        ConfigureStampTransactionEntity( modelBuilder );
+        ConfigureRewardEntity( modelBuilder );
+        ConfigureRewardRedemptionEntity( modelBuilder );
+        ConfigureStampRuleEntity( modelBuilder );
+
+        base.OnModelCreating( modelBuilder );
+    }
+
+    private void ApplyTenantFilter<TEntity>( ModelBuilder modelBuilder ) where TEntity : class
+    {
+        var entityType = modelBuilder.Model.FindEntityType( typeof( Tenant ) );
+        if( entityType != null )
+        {
+            var parameter = Expression.Parameter( typeof( TEntity ), "e" );
+            var tenantIdProperty = Expression.Property( parameter, "TenantId" );
+            var currentTenantId = Expression.Property(
+                Expression.Constant( this ),
+                nameof( CurrentTenantId )
+            );
+
+            // ✅ فیلتر: فقط رکوردهای مربوط به Tenant فعلی یا عمومی (برای Guest)
+            var filter = Expression.OrElse(
+                Expression.Equal( currentTenantId, Expression.Constant( null ) ),
+                Expression.Equal( tenantIdProperty, currentTenantId )
+            );
+
+            var lambda = Expression.Lambda( filter, parameter );
+            modelBuilder.Entity<TEntity>( ).HasQueryFilter( lambda );
+        }
+    }
+
+    private void ConfigureUserEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<User>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -77,16 +92,20 @@ public class ApplicationDbContext : DbContext
             entity.Property( e => e.Role ).IsRequired( ).HasMaxLength( 50 );
             entity.HasIndex( e => new { e.Email, e.TenantId } ).IsUnique( );
         } );
+    }
 
-        // Tenant (بدون تغییر)
+    private void ConfigureTenantEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<Tenant>( entity =>
         {
             entity.HasKey( e => e.Id );
             entity.Property( e => e.Name ).IsRequired( ).HasMaxLength( 200 );
             entity.Property( e => e.BusinessType ).HasMaxLength( 100 );
         } );
+    }
 
-        // UserTenant (بدون تغییر)
+    private void ConfigureUserTenantEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<UserTenant>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -100,8 +119,10 @@ public class ApplicationDbContext : DbContext
             entity.Property( ut => ut.TotalStamps ).HasDefaultValue( 0 );
             entity.HasIndex( ut => new { ut.UserId, ut.TenantId } ).IsUnique( );
         } );
+    }
 
-        // StampTransaction (بدون تغییر)
+    private void ConfigureStampTransactionEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<StampTransaction>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -111,8 +132,10 @@ public class ApplicationDbContext : DbContext
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
                 .OnDelete( DeleteBehavior.Restrict );
         } );
+    }
 
-        // Reward (بدون تغییر)
+    private void ConfigureRewardEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<Reward>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -120,8 +143,10 @@ public class ApplicationDbContext : DbContext
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
                 .OnDelete( DeleteBehavior.Restrict );
         } );
+    }
 
-        // RewardRedemption (بدون تغییر)
+    private void ConfigureRewardRedemptionEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<RewardRedemption>( entity =>
         {
             entity.HasKey( e => e.Id );
@@ -130,15 +155,15 @@ public class ApplicationDbContext : DbContext
                 .OnDelete( DeleteBehavior.Restrict );
             entity.HasOne( e => e.Reward ).WithMany( r => r.RewardRedemptions ).HasForeignKey( e => e.RewardId );
         } );
+    }
 
-        // StampRule (بدون تغییر)
+    private void ConfigureStampRuleEntity( ModelBuilder modelBuilder )
+    {
         modelBuilder.Entity<StampRule>( entity =>
         {
             entity.HasKey( e => e.Id );
             entity.HasOne( e => e.Tenant ).WithMany( ).HasForeignKey( e => e.TenantId )
                 .OnDelete( DeleteBehavior.Restrict );
         } );
-
-        base.OnModelCreating( modelBuilder );
     }
 }
