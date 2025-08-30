@@ -26,15 +26,26 @@ namespace Stamp.Infrastructure.Repositories
                 .FirstOrDefaultAsync( u => u.Email == email, cancellationToken );
         }
 
-        public async Task<User?> GetByEmailAndTenantAsync( string email, Guid tenantId, CancellationToken cancellationToken )
+        public async Task<User?> GetByEmailAndTenantAsync( string email, Guid? tenantId, CancellationToken cancellationToken )
         {
-            return await _context.Users
-                .Include( u => u.UserTenants )
-                .ThenInclude( ut => ut.Tenant )
-                .FirstOrDefaultAsync( u =>
-                    u.Email == email &&
-                    u.UserTenants.Any( ut => ut.TenantId == tenantId && !ut.IsDeleted ),
-                    cancellationToken );
+            if( tenantId.HasValue )
+            {
+                return await _context.Users
+                    .Include( u => u.UserTenants )
+                    .ThenInclude( ut => ut.Tenant )
+                    .FirstOrDefaultAsync( u =>
+                        u.Email == email &&
+                        u.UserTenants.Any( ut => ut.TenantId == tenantId.Value && !ut.IsDeleted ),
+                        cancellationToken );
+            }
+            else
+            {
+                return await _context.Users
+                    .FirstOrDefaultAsync( u =>
+                        u.Email == email &&
+                        !u.IsDeleted,
+                        cancellationToken );
+            }
         }
 
         public async Task<bool> ExistsByEmailAsync( string email, CancellationToken cancellationToken )

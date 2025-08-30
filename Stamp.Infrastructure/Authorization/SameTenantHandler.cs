@@ -20,20 +20,28 @@ public class SameTenantHandler : AuthorizationHandler<SameTenantRequirement, Gui
         SameTenantRequirement requirement,
         Guid resourceTenantId )
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if( httpContext == null )
+        // ✅ خط ۱: دریافت نقش کاربر از JWT
+        var roleClaim = context.User.FindFirst( "Role" )?.Value;
+
+        // ✅ خط ۲: بررسی اینکه آیا کاربر Guest است
+        if( roleClaim == "Guest" )
         {
+            context.Succeed( requirement );
             return Task.CompletedTask;
         }
 
+        // ✅ خط ۳: بررسی TenantId برای کاربران عادی
         var tenantClaim = context.User.FindFirst( "TenantId" )?.Value;
         if( tenantClaim != null && Guid.TryParse( tenantClaim, out var userTenantId ) )
         {
+            // ✅ خط ۴: تأیید تطابق TenantId
             if( userTenantId == resourceTenantId )
             {
                 context.Succeed( requirement );
             }
         }
+
+        // ✅ خط ۵: خروج ایمن از متد
         return Task.CompletedTask;
     }
 }

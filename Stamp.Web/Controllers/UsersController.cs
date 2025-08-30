@@ -4,6 +4,7 @@ using Stamp.Application.Commands.Users;
 using Stamp.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Stamp.Application.Queries.Users;
+using Stamp.Application.Commands.UserTenants; // ✅ این خط رو اضافه کن
 
 namespace Stamp.Web.Controllers
 {
@@ -24,8 +25,6 @@ namespace Stamp.Web.Controllers
         [HttpPost( "register" )]
         public async Task<ActionResult<UserDto>> Register( [FromBody] RegisterUserCommand command )
         {
-            // نیازی به ModelState.IsValid نیست چون FluentValidation فعال است
-
             var result = await _mediator.Send( command );
             return Ok( result );
         }
@@ -36,9 +35,8 @@ namespace Stamp.Web.Controllers
         [HttpPost( "login" )]
         public async Task<ActionResult> Login( [FromBody] LoginUserCommand command )
         {
-            // اعتبارسنجی هم با FluentValidation انجام می‌شود
             var token = await _mediator.Send( command );
-            return Ok( new { Token = token } ); // خروجی استاندارد JSON
+            return Ok( new { Token = token } );
         }
 
         /// <summary>
@@ -54,6 +52,22 @@ namespace Stamp.Web.Controllers
 
             var result = await _mediator.Send( new GetCurrentUserQuery { UserId = userId } );
             return Ok( result );
+        }
+
+        // ✅ این endpoint رو اضافه کن (حیاتی برای عضویت در Tenant)
+        [Authorize]
+        [HttpPost( "join-tenant" )]
+        public async Task<IActionResult> JoinTenant( [FromBody] JoinTenantCommand command )
+        {
+            var userIdClaim = User.FindFirst( "UserId" )?.Value;
+            if( string.IsNullOrEmpty( userIdClaim ) || !Guid.TryParse( userIdClaim, out var userId ) )
+            {
+                return Unauthorized( );
+            }
+
+            command.UserId = userId;
+            await _mediator.Send( command );
+            return Ok( );
         }
     }
 }

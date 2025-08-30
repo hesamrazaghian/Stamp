@@ -38,10 +38,14 @@ namespace Stamp.Application.Handlers.Users
             if( !passwordValid )
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
+            var role = request.TenantId.HasValue ? user.Role : "Guest";
+
+            var tenantId = request.TenantId ?? Guid.Empty;
+
             return _jwtService.GenerateToken(
                 user.Id,
-                request.TenantId,
-                user.Role,
+                tenantId,
+                role,
                 user.Email );
         }
     }

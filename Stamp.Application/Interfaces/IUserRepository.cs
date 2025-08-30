@@ -11,7 +11,7 @@ namespace Stamp.Application.Interfaces
         Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken );
 
         // گرفتن کاربر همراه Tenant خاص
-        Task<User?> GetByEmailAndTenantAsync( string email, Guid tenantId, CancellationToken cancellationToken );
+        Task<User?> GetByEmailAndTenantAsync( string email, Guid? tenantId, CancellationToken cancellationToken );
 
         // آیا ایمیل کاربر در کل سیستم وجود دارد؟
         Task<bool> ExistsByEmailAsync( string email, CancellationToken cancellationToken );
