@@ -34,11 +34,20 @@ Stamp.Web
 
 
 ⚙️ Tech Stack
-.NET 8 / C#
-Entity Framework Core 8
-MediatR
-FluentValidation
-AutoMapper
-BCrypt.Net-Next
-JWT (System.IdentityModel.Tokens.Jwt)
-Swagger / Swashbuckle.AspNetCore
+- **.NET 9 / C# 13**
+- **Entity Framework Core 9**
+- **MediatR 13**
+- **FluentValidation 12**
+- **AutoMapper 12**
+- **BCrypt.Net-Next 4**
+- **JWT** (System.IdentityModel.Tokens.Jwt)
+- **Swagger / Swashbuckle.AspNetCore 9**
+
+---
+
+## 📦 Projects
+- **Stamp.Domain** – Core business entities and domain logic
+- **Stamp.Application** – Application services, CQRS handlers, DTOs, validators
+- **Stamp.Infrastructure** – EF Core, repositories, external services, migrations
+- **Stamp.Web** – API controllers, dependency injection, startup configuration
+
