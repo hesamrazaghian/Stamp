@@ -1,4 +1,6 @@
-﻿namespace Stamp.Application.DTOs;
+﻿using System.Collections.Generic;
+
+namespace Stamp.Application.DTOs;
 
 public class UserDto
 {
@@ -6,6 +8,7 @@ public class UserDto
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
-    public Guid? TenantId { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public List<UserTenantDto> Tenants { get; set; } = new List<UserTenantDto>( );
 }

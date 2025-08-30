@@ -12,16 +12,16 @@ namespace Stamp.Application.Handlers.Users
     public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
     {
         private readonly IUserRepository _userRepository;
-        private readonly ITenantRepository _tenantRepository; // ✅ اضافه شده
+        private readonly ITenantRepository _tenantRepository;
         private readonly IPasswordHasher _passwordHasher;
 
         public RegisterUserCommandHandler(
             IUserRepository userRepository,
-            ITenantRepository tenantRepository, // ✅ اضافه شده
+            ITenantRepository tenantRepository,
             IPasswordHasher passwordHasher )
         {
             _userRepository = userRepository;
-            _tenantRepository = tenantRepository; // ✅ اضافه شده
+            _tenantRepository = tenantRepository;
             _passwordHasher = passwordHasher;
         }
 
@@ -35,7 +35,11 @@ namespace Stamp.Application.Handlers.Users
                 if( command.TenantId.HasValue )
                 {
                     // 2. آیا کاربر عضو این Tenant شده؟
-                    var isMember = await _userRepository.ExistsInTenantAsync( existingUser.Id, command.TenantId.Value, cancellationToken );
+                    var isMember = await _userRepository.ExistsInTenantAsync(
+                        existingUser.Id,
+                        command.TenantId.Value,
+                        cancellationToken
+                    );
 
                     if( isMember )
                     {
@@ -43,7 +47,11 @@ namespace Stamp.Application.Handlers.Users
                     }
 
                     // 3. افزودن به Tenant جدید
-                    await _userRepository.AddToTenantAsync( existingUser.Id, command.TenantId.Value, cancellationToken );
+                    await _userRepository.AddToTenantAsync(
+                        existingUser.Id,
+                        command.TenantId.Value,
+                        cancellationToken
+                    );
                 }
 
                 return new UserDto
@@ -52,7 +60,16 @@ namespace Stamp.Application.Handlers.Users
                     Email = existingUser.Email,
                     Phone = existingUser.Phone,
                     Role = existingUser.Role,
-                    CreatedAt = existingUser.CreatedAt
+                    CreatedAt = existingUser.CreatedAt,
+                    Tenants = existingUser.UserTenants
+                        .Where( ut => !ut.IsDeleted )
+                        .Select( ut => new UserTenantDto
+                        {
+                            TenantId = ut.TenantId,
+                            TenantName = ut.Tenant.Name,
+                            UserId = ut.UserId,
+                            Email = ut.User.Email
+                        } ).ToList( )
                 };
             }
 
@@ -65,7 +82,7 @@ namespace Stamp.Application.Handlers.Users
                 Email = command.Email,
                 Phone = command.Phone,
                 PasswordHash = passwordHash,
-                Role = "User", // ✅ تغییر: از command.Role به "User" (موقت)
+                Role = "User",
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -73,12 +90,19 @@ namespace Stamp.Application.Handlers.Users
             // اگر TenantId داده شده → ایجاد با Tenant
             if( command.TenantId.HasValue )
             {
-                // ✅ اضافه شده: بررسی وجود Tenant
-                var tenant = await _tenantRepository.GetByIdAsync( command.TenantId.Value, cancellationToken );
+                var tenant = await _tenantRepository.GetByIdAsync(
+                    command.TenantId.Value,
+                    cancellationToken
+                );
+
                 if( tenant == null )
                     throw new Exception( "Tenant not found" );
 
-                await _userRepository.CreateWithTenantAsync( newUser, command.TenantId.Value, cancellationToken );
+                await _userRepository.CreateWithTenantAsync(
+                    newUser,
+                    command.TenantId.Value,
+                    cancellationToken
+                );
             }
             else
             {
@@ -92,7 +116,19 @@ namespace Stamp.Application.Handlers.Users
                 Email = newUser.Email,
                 Phone = newUser.Phone,
                 Role = newUser.Role,
-                CreatedAt = newUser.CreatedAt
+                CreatedAt = newUser.CreatedAt,
+                Tenants = command.TenantId.HasValue
+                    ? new List<UserTenantDto>
+                      {
+                          new UserTenantDto
+                          {
+                              TenantId = command.TenantId.Value,
+                              TenantName = (await _tenantRepository.GetByIdAsync(command.TenantId.Value, cancellationToken))?.Name ?? string.Empty,
+                              UserId = newUser.Id,
+                              Email = newUser.Email
+                          }
+                      }
+                    : new List<UserTenantDto>( )
             };
         }
     }

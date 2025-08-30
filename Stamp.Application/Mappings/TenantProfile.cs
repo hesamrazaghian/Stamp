@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Stamp.Application.DTOs;
 using Stamp.Domain.Entities;
+using Stamp.Application.DTOs;
 
 namespace Stamp.Application.Mappings;
 
@@ -8,7 +8,10 @@ public class TenantProfile : Profile
 {
     public TenantProfile( )
     {
-        // ✅ فقط مپینگ‌های مربوط به Tenant اینجا قرار می‌گیرن
         CreateMap<Tenant, TenantDto>( );
+        CreateMap<Tenant, TenantSummaryDto>( );
+        CreateMap<Tenant, TenantListItemDto>( )
+            .ForMember( dest => dest.TotalUsers, opt =>
+                opt.MapFrom( src => src.UserTenants.Count( ut => !ut.IsDeleted ) ) );
     }
 }
