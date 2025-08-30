@@ -98,5 +98,42 @@ namespace Stamp.Infrastructure.Repositories
                 .ThenInclude( ut => ut.Tenant )
                 .FirstOrDefaultAsync( u => u.Id == userId, cancellationToken );
         }
+
+        // ✅ این متد رو اضافه کن (بررسی وجود هرگونه عضویت)
+        public async Task<bool> HasAnyTenantMembershipAsync(
+            Guid userId,
+            CancellationToken cancellationToken )
+        {
+            return await _context.UserTenants
+                .AnyAsync( ut => ut.UserId == userId && !ut.IsDeleted, cancellationToken );
+        }
+
+        // ✅ این متد رو اضافه کن (به‌روزرسانی نقش کاربر)
+        public async Task UpdateUserRoleAsync(
+            Guid userId,
+            string role,
+            CancellationToken cancellationToken )
+        {
+            var user = await _context.Users.FindAsync( new object[ ] { userId }, cancellationToken );
+            if( user != null )
+            {
+                user.Role = role;
+                await _context.SaveChangesAsync( cancellationToken );
+            }
+        }
+
+        // ✅ این متد رو اضافه کن (حیاتی برای رفع خطا)
+        public async Task<User?> GetByIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken )
+        {
+            return await _context.Users
+                .Include( u => u.UserTenants )
+                .ThenInclude( ut => ut.Tenant )
+                .FirstOrDefaultAsync( u =>
+                    u.Id == userId &&
+                    !u.IsDeleted,
+                    cancellationToken );
+        }
     }
 }

@@ -26,6 +26,9 @@ namespace Stamp.Application.Interfaces
         Task CreateWithTenantAsync( User user, Guid tenantId, CancellationToken cancellationToken );
         // گرفتن کاربر همراه همه Tenantها
         Task<User?> GetWithTenantsAsync( Guid userId, CancellationToken cancellationToken );
+        Task<bool> HasAnyTenantMembershipAsync( Guid userId, CancellationToken cancellationToken );
+        Task UpdateUserRoleAsync( Guid userId, string role, CancellationToken cancellationToken );
+        Task<User?> GetByIdAsync( Guid userId, CancellationToken cancellationToken );
 
     }
 }

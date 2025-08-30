@@ -4,7 +4,7 @@ using Stamp.Application.Commands.Users;
 using Stamp.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Stamp.Application.Queries.Users;
-using Stamp.Application.Commands.UserTenants; // ✅ این خط رو اضافه کن
+using Stamp.Application.Commands.UserTenants;
 
 namespace Stamp.Web.Controllers
 {
@@ -68,6 +68,27 @@ namespace Stamp.Web.Controllers
             command.UserId = userId;
             await _mediator.Send( command );
             return Ok( );
+        }
+
+        // ✅ این endpoint رو اضافه کن (حیاتی برای تغییر Tenant فعال)
+        [Authorize]
+        [HttpPost( "switch-tenant" )]
+        public async Task<IActionResult> SwitchTenant( [FromBody] SwitchTenantCommand command )
+        {
+            var userIdClaim = User.FindFirst( "UserId" )?.Value;
+            if( string.IsNullOrEmpty( userIdClaim ) || !Guid.TryParse( userIdClaim, out var userId ) )
+            {
+                return Unauthorized( );
+            }
+
+            command.UserId = userId;
+            var newToken = await _mediator.Send( command );
+
+            return Ok( new
+            {
+                Token = newToken,
+                Message = "Tenant switched successfully"  // ✅ کاما اضافه شد
+            });
         }
     }
 }

@@ -41,10 +41,24 @@ public class JoinTenantCommandHandler : IRequestHandler<JoinTenantCommand>
         if( isMember )
             throw new Exception( "User is already a member of this tenant" );
 
-        // ✅ خط ۳: افزودن کاربر به Tenant
+        // ✅ خط ۳: بررسی وجود هرگونه عضویت قبلی (برای تغییر نقش)
+        var hasOtherMemberships = await _userRepository.HasAnyTenantMembershipAsync(
+            command.UserId,
+            cancellationToken );
+
+        // ✅ خط ۴: افزودن کاربر به Tenant
         await _userRepository.AddToTenantAsync(
             command.UserId,
             command.TenantId,
             cancellationToken );
+
+        // ✅ خط ۵: تغییر نقش از Guest به User در اولین عضویت
+        if( !hasOtherMemberships )
+        {
+            await _userRepository.UpdateUserRoleAsync(
+                command.UserId,
+                "User",
+                cancellationToken );
+        }
     }
 }
