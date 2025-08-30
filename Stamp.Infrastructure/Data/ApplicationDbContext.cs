@@ -60,8 +60,9 @@ public class ApplicationDbContext : DbContext
 
     private void ApplyTenantFilter<TEntity>( ModelBuilder modelBuilder ) where TEntity : class
     {
-        var entityType = modelBuilder.Model.FindEntityType( typeof( Tenant ) );
-        if( entityType != null )
+        // ✅ اصلاح اصلی: بررسی وجود TenantId در موجودیت فعلی
+        var entityType = modelBuilder.Model.FindEntityType( typeof( TEntity ) );
+        if( entityType != null && entityType.ClrType.GetProperty( "TenantId" ) != null )
         {
             var parameter = Expression.Parameter( typeof( TEntity ), "e" );
             var tenantIdProperty = Expression.Property( parameter, "TenantId" );
@@ -72,7 +73,7 @@ public class ApplicationDbContext : DbContext
 
             // ✅ فیلتر: فقط رکوردهای مربوط به Tenant فعلی یا عمومی (برای Guest)
             var filter = Expression.OrElse(
-                Expression.Equal( currentTenantId, Expression.Constant( null ) ),
+                Expression.Equal( currentTenantId, Expression.Constant( null, typeof( Guid? ) ) ),
                 Expression.Equal( tenantIdProperty, currentTenantId )
             );
 

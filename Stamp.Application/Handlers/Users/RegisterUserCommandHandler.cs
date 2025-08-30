@@ -4,6 +4,8 @@ using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,12 +48,29 @@ namespace Stamp.Application.Handlers.Users
                         throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
                     }
 
+                    // ✅ بررسی اولین عضویت کاربر (برای تغییر نقش)
+                    var hasOtherMemberships = await _userRepository.HasAnyTenantMembershipAsync(
+                        existingUser.Id,
+                        cancellationToken
+                    );
+
                     // 3. افزودن به Tenant جدید
                     await _userRepository.AddToTenantAsync(
                         existingUser.Id,
                         command.TenantId.Value,
                         cancellationToken
                     );
+
+                    // ✅ تغییر نقش از Guest به User در اولین عضویت
+                    if( !hasOtherMemberships )
+                    {
+                        existingUser.Role = "User";
+                        await _userRepository.UpdateUserRoleAsync(
+                            existingUser.Id,
+                            "User",
+                            cancellationToken
+                        );
+                    }
                 }
 
                 return new UserDto

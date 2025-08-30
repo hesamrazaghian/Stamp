@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.UserTenants;
 using Stamp.Application.Interfaces;
+using Stamp.Application.Exceptions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,7 +31,7 @@ public class JoinTenantCommandHandler : IRequestHandler<JoinTenantCommand>
             cancellationToken );
 
         if( tenant == null )
-            throw new Exception( "Tenant not found" );
+            throw new TenantNotFoundException( command.TenantId ); // ✅ جایگزینی با Exception سفارشی
 
         // ✅ خط ۲: بررسی عضویت قبلی کاربر
         var isMember = await _userRepository.ExistsInTenantAsync(
