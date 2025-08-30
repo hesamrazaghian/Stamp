@@ -23,7 +23,12 @@ namespace Stamp.Infrastructure.Repositories
         public async Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken )
         {
             return await _context.Users
-                .FirstOrDefaultAsync( u => u.Email == email, cancellationToken );
+                .Include( u => u.UserTenants )
+                .ThenInclude( ut => ut.Tenant )
+                .FirstOrDefaultAsync( u =>
+                    u.Email == email &&
+                    !u.IsDeleted,
+                    cancellationToken );
         }
 
         public async Task<User?> GetByEmailAndTenantAsync( string email, Guid? tenantId, CancellationToken cancellationToken )
