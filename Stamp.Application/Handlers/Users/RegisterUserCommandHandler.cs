@@ -3,6 +3,7 @@ using Stamp.Application.DTOs;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
+using Stamp.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +30,13 @@ namespace Stamp.Application.Handlers.Users
 
         public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
         {
-            // 1. جستجوی کاربر با ایمیل (global)
+            // 1. جستجوی کاربر
             var existingUser = await _userRepository.GetByEmailAsync( command.Email, cancellationToken );
 
             if( existingUser != null )
             {
                 if( command.TenantId.HasValue )
                 {
-                    // 2. آیا کاربر عضو این Tenant شده؟
                     var isMember = await _userRepository.ExistsInTenantAsync(
                         existingUser.Id,
                         command.TenantId.Value,
@@ -48,26 +48,24 @@ namespace Stamp.Application.Handlers.Users
                         throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
                     }
 
-                    // ✅ بررسی اولین عضویت کاربر (برای تغییر نقش)
                     var hasOtherMemberships = await _userRepository.HasAnyTenantMembershipAsync(
                         existingUser.Id,
                         cancellationToken
                     );
 
-                    // 3. افزودن به Tenant جدید
                     await _userRepository.AddToTenantAsync(
                         existingUser.Id,
                         command.TenantId.Value,
                         cancellationToken
                     );
 
-                    // ✅ تغییر نقش از Guest به User در اولین عضویت
+                    // 🔹 نقش را از Guest به User تغییر دهیم اگر اولین عضویت کاربر است
                     if( !hasOtherMemberships )
                     {
-                        existingUser.Role = "User";
+                        existingUser.Role = RoleEnum.User.ToString( );
                         await _userRepository.UpdateUserRoleAsync(
                             existingUser.Id,
-                            "User",
+                            RoleEnum.User.ToString( ),
                             cancellationToken
                         );
                     }
@@ -101,12 +99,11 @@ namespace Stamp.Application.Handlers.Users
                 Email = command.Email,
                 Phone = command.Phone,
                 PasswordHash = passwordHash,
-                Role = "User",
+                Role = command.TenantId.HasValue ? RoleEnum.User.ToString( ) : RoleEnum.Guest.ToString( ), // 🎯 پیش‌فرض امن
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // اگر TenantId داده شده → ایجاد با Tenant
             if( command.TenantId.HasValue )
             {
                 var tenant = await _tenantRepository.GetByIdAsync(
@@ -125,7 +122,6 @@ namespace Stamp.Application.Handlers.Users
             }
             else
             {
-                // بدون Tenant (کاربر مهمان)
                 await _userRepository.AddAsync( newUser, cancellationToken );
             }
 

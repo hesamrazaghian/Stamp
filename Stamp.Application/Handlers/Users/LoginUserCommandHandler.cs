@@ -1,6 +1,11 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
+using Stamp.Domain.Enums;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Stamp.Application.Handlers.Users
 {
@@ -34,19 +39,24 @@ namespace Stamp.Application.Handlers.Users
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
             var passwordValid = await _passwordHasher.VerifyPasswordAsync( user.PasswordHash, request.Password );
-
             if( !passwordValid )
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
-            var role = request.TenantId.HasValue ? user.Role : "Guest";
+            // 🔹 اگر نقش موجود در دیتابیس معتبر نباشه → Guest
+            if( !Enum.TryParse<RoleEnum>( user.Role, true, out var roleEnum ) )
+            {
+                roleEnum = RoleEnum.Guest;
+            }
 
+            // ✅ اگر TenantId نبود → Guid.Empty
             var tenantId = request.TenantId ?? Guid.Empty;
 
             return _jwtService.GenerateToken(
                 user.Id,
                 tenantId,
-                role,
-                user.Email );
+                roleEnum,
+                user.Email
+            );
         }
     }
 }

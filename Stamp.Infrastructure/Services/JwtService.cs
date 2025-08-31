@@ -1,9 +1,10 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using Stamp.Application.Interfaces;
+using Stamp.Application.Settings;
+using Stamp.Domain.Enums;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Stamp.Application.Interfaces;
-using Stamp.Application.Settings;
 
 namespace Stamp.Infrastructure.Services
 {
@@ -19,13 +20,13 @@ namespace Stamp.Infrastructure.Services
             _jwtSettings = jwtSettings;
         }
 
-        public string GenerateToken( Guid userId, Guid tenantId, string role, string email )
+        public string GenerateToken( Guid userId, Guid tenantId, RoleEnum role, string email )
         {
             var claims = new[ ]
             {
                 new Claim("UserId", userId.ToString()),
                 new Claim("TenantId", tenantId.ToString()),
-                new Claim(ClaimTypes.Role, role),
+                new Claim(ClaimTypes.Role, role.ToString()),
                 new Claim(ClaimTypes.Email, email),
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

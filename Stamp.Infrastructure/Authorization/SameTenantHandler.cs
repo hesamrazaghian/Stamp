@@ -1,47 +1,53 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Stamp.Application.Authorization;
+using Stamp.Domain.Enums; // ✅ استفاده از RoleEnum
 
-namespace Stamp.Infrastructure.Authorization;
-
-public class SameTenantHandler : AuthorizationHandler<SameTenantRequirement, Guid>
+namespace Stamp.Infrastructure.Authorization
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public SameTenantHandler( IHttpContextAccessor httpContextAccessor )
+    public class SameTenantHandler : AuthorizationHandler<SameTenantRequirement, Guid>
     {
-        _httpContextAccessor = httpContextAccessor;
-    }
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-    protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context,
-        SameTenantRequirement requirement,
-        Guid resourceTenantId )
-    {
-        // ✅ خط ۱: دریافت نقش کاربر از JWT
-        var roleClaim = context.User.FindFirst( "Role" )?.Value;
-
-        // ✅ خط ۲: بررسی اینکه آیا کاربر Guest است
-        if( roleClaim == "Guest" )
+        public SameTenantHandler( IHttpContextAccessor httpContextAccessor )
         {
-            context.Succeed( requirement );
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        protected override Task HandleRequirementAsync(
+            AuthorizationHandlerContext context,
+            SameTenantRequirement requirement,
+            Guid resourceTenantId )
+        {
+            // گرفتن نقش کاربر به صورت امن
+            var roleClaim = context.User.FindFirst( ClaimTypes.Role )?.Value;
+
+            if( !string.IsNullOrWhiteSpace( roleClaim ) &&
+                Enum.TryParse<RoleEnum>( roleClaim, out var roleEnum ) )
+            {
+                // اگر نقش Guest بود، اینجا دسترسی مهمان رو میدیم
+                if( roleEnum == RoleEnum.Guest )
+                {
+                    context.Succeed( requirement );
+                    return Task.CompletedTask;
+                }
+            }
+
+            // بررسی TenantId
+            var tenantClaim = context.User.FindFirst( "TenantId" )?.Value;
+            if( !string.IsNullOrWhiteSpace( tenantClaim ) &&
+                Guid.TryParse( tenantClaim, out var userTenantId ) )
+            {
+                if( userTenantId == resourceTenantId )
+                {
+                    context.Succeed( requirement );
+                }
+            }
+
             return Task.CompletedTask;
         }
-
-        // ✅ خط ۳: بررسی TenantId برای کاربران عادی
-        var tenantClaim = context.User.FindFirst( "TenantId" )?.Value;
-        if( tenantClaim != null && Guid.TryParse( tenantClaim, out var userTenantId ) )
-        {
-            // ✅ خط ۴: تأیید تطابق TenantId
-            if( userTenantId == resourceTenantId )
-            {
-                context.Succeed( requirement );
-            }
-        }
-
-        // ✅ خط ۵: خروج ایمن از متد
-        return Task.CompletedTask;
     }
 }
