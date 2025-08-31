@@ -22,13 +22,14 @@ namespace Stamp.Infrastructure.Authorization
             SameTenantRequirement requirement,
             Guid resourceTenantId )
         {
-            // گرفتن نقش کاربر به صورت امن
+            // گرفتن نقش کاربر
             var roleClaim = context.User.FindFirst( ClaimTypes.Role )?.Value;
 
+            // اگر نقش معتبر و قابل Parse با RoleEnum بود (case-insensitive)
             if( !string.IsNullOrWhiteSpace( roleClaim ) &&
-                Enum.TryParse<RoleEnum>( roleClaim, out var roleEnum ) )
+                Enum.TryParse<RoleEnum>( roleClaim, true, out var roleEnum ) )
             {
-                // اگر نقش Guest بود، اینجا دسترسی مهمان رو میدیم
+                // نقش Guest → اجازه دسترسی می‌دهیم
                 if( roleEnum == RoleEnum.Guest )
                 {
                     context.Succeed( requirement );

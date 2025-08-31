@@ -2,26 +2,31 @@
 using Stamp.Application.Authorization;
 using Stamp.Domain.Enums;
 using System;
-using System.Data;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Stamp.Infrastructure.Authorization;
-
-public class GuestAccessHandler : AuthorizationHandler<GuestAccessPolicy>
+namespace Stamp.Infrastructure.Authorization
 {
-    protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context,
-        GuestAccessPolicy requirement )
+    public class GuestAccessHandler : AuthorizationHandler<GuestAccessPolicy>
     {
-        var role = context.User.FindFirst( ClaimTypes.Role )?.Value;
-
-        if( !string.IsNullOrWhiteSpace( role ) &&
-                ( role == RoleEnum.Guest.ToString( ) || context.User.Identity?.IsAuthenticated == true ))
+        protected override Task HandleRequirementAsync(
+            AuthorizationHandlerContext context,
+            GuestAccessPolicy requirement )
         {
-            context.Succeed( requirement );
-        }
+            var role = context.User.FindFirst( ClaimTypes.Role )?.Value;
 
-        return Task.CompletedTask;
+            // اگر نقش موجود و قابل Parse بود
+            if( !string.IsNullOrWhiteSpace( role ) &&
+                Enum.TryParse<RoleEnum>( role, true, out var roleEnum ) )
+            {
+                // اگر نقش Guest بود یا کاربر وارد سیستم شده بود
+                if( roleEnum == RoleEnum.Guest || context.User.Identity?.IsAuthenticated == true )
+                {
+                    context.Succeed( requirement );
+                }
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }
