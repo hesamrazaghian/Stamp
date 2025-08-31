@@ -2,6 +2,7 @@
 using Stamp.Application.DTOs;
 using Stamp.Application.Interfaces;
 using Stamp.Application.Queries.Users;
+using Stamp.Domain.Enums;
 
 namespace Stamp.Application.Handlers.Users;
 
@@ -21,12 +22,21 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
         if( user == null )
             throw new Exception( "کاربر یافت نشد" );
 
+        // 🎯 نقش را از DB بخوان و اگر معتبر نبود → Guest
+        if( !Enum.TryParse<RoleEnum>( user.Role, true, out var roleEnum ) )
+        {
+            roleEnum = RoleEnum.Guest;
+        }
+
         return new UserProfileDto
         {
             Id = user.Id,
             Email = user.Email,
             Phone = user.Phone,
-            Role = user.Role,
+
+            // ✅ ارسال مقدار RoleEnum به جای رشته خالی
+            Role = roleEnum.ToString( ),
+
             CreatedAt = user.CreatedAt,
             Tenants = user.UserTenants
                 .Where( ut => !ut.IsDeleted )

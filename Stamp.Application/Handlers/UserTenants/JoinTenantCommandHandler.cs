@@ -1,7 +1,8 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.UserTenants;
-using Stamp.Application.Interfaces;
 using Stamp.Application.Exceptions;
+using Stamp.Application.Interfaces;
+using Stamp.Domain.Enums;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,7 +59,7 @@ public class JoinTenantCommandHandler : IRequestHandler<JoinTenantCommand>
         {
             await _userRepository.UpdateUserRoleAsync(
                 command.UserId,
-                "User",
+                RoleEnum.User.ToString( ),
                 cancellationToken );
         }
     }
