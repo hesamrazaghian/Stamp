@@ -30,7 +30,7 @@ namespace Stamp.Application.Handlers.Users
 
         public async Task<UserDto> Handle( RegisterUserCommand command, CancellationToken cancellationToken )
         {
-            // 1. جستجوی کاربر
+            // 1. بررسی وجود کاربر
             var existingUser = await _userRepository.GetByEmailAsync( command.Email, cancellationToken );
 
             if( existingUser != null )
@@ -44,9 +44,7 @@ namespace Stamp.Application.Handlers.Users
                     );
 
                     if( isMember )
-                    {
                         throw new Exception( "ایمیل قبلاً در این Tenant ثبت شده است" );
-                    }
 
                     var hasOtherMemberships = await _userRepository.HasAnyTenantMembershipAsync(
                         existingUser.Id,
@@ -59,24 +57,22 @@ namespace Stamp.Application.Handlers.Users
                         cancellationToken
                     );
 
-                    // 🔹 نقش را از Guest به User تغییر دهیم اگر اولین عضویت کاربر است
+                    // 🎯 تغییر نقش اگر اولین عضویت کاربر است
                     if( !hasOtherMemberships )
                     {
-                        existingUser.Role = RoleEnum.User.ToString( );
-                        await _userRepository.UpdateUserRoleAsync(
-                            existingUser.Id,
-                            RoleEnum.User.ToString( ),
-                            cancellationToken
-                        );
+                        var newRole = RoleEnum.User;
+                        existingUser.Role = newRole.ToString( ); // ذخیره در DB
+                        await _userRepository.UpdateUserRoleAsync( existingUser.Id, newRole.ToString( ), cancellationToken );
                     }
                 }
 
+                // 📌 خروجی DTO با RoleEnum
                 return new UserDto
                 {
                     Id = existingUser.Id,
                     Email = existingUser.Email,
                     Phone = existingUser.Phone,
-                    Role = existingUser.Role,
+                    Role = Enum.TryParse<RoleEnum>( existingUser.Role, true, out var roleEnum ) ? roleEnum : RoleEnum.Guest,
                     CreatedAt = existingUser.CreatedAt,
                     Tenants = existingUser.UserTenants
                         .Where( ut => !ut.IsDeleted )
@@ -93,44 +89,40 @@ namespace Stamp.Application.Handlers.Users
             // 4. ایجاد کاربر جدید
             var passwordHash = await _passwordHasher.HashPasswordAsync( command.Password );
 
+            var assignedRole = command.TenantId.HasValue ? RoleEnum.User : RoleEnum.Guest;
+
             var newUser = new User
             {
                 Id = Guid.NewGuid( ),
                 Email = command.Email,
                 Phone = command.Phone,
                 PasswordHash = passwordHash,
-                Role = command.TenantId.HasValue ? RoleEnum.User.ToString( ) : RoleEnum.Guest.ToString( ), // 🎯 پیش‌فرض امن
+                Role = assignedRole.ToString( ), // برای DB
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
             };
 
             if( command.TenantId.HasValue )
             {
-                var tenant = await _tenantRepository.GetByIdAsync(
-                    command.TenantId.Value,
-                    cancellationToken
-                );
+                var tenant = await _tenantRepository.GetByIdAsync( command.TenantId.Value, cancellationToken );
 
                 if( tenant == null )
                     throw new Exception( "Tenant not found" );
 
-                await _userRepository.CreateWithTenantAsync(
-                    newUser,
-                    command.TenantId.Value,
-                    cancellationToken
-                );
+                await _userRepository.CreateWithTenantAsync( newUser, command.TenantId.Value, cancellationToken );
             }
             else
             {
                 await _userRepository.AddAsync( newUser, cancellationToken );
             }
 
+            // 📌 خروجی DTO با RoleEnum
             return new UserDto
             {
                 Id = newUser.Id,
                 Email = newUser.Email,
                 Phone = newUser.Phone,
-                Role = newUser.Role,
+                Role = assignedRole,
                 CreatedAt = newUser.CreatedAt,
                 Tenants = command.TenantId.HasValue
                     ? new List<UserTenantDto>

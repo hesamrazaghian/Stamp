@@ -35,7 +35,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
             Phone = user.Phone,
 
             // ✅ ارسال مقدار RoleEnum به جای رشته خالی
-            Role = roleEnum.ToString( ),
+            Role = roleEnum,
 
             CreatedAt = user.CreatedAt,
             Tenants = user.UserTenants
