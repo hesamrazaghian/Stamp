@@ -49,11 +49,10 @@ namespace Stamp.Application.Handlers.Users
             if( user == null )
                 throw new Exception( "User not found" );
 
-            // 🔹 تبدیل رشته‌ی Role به Enum
-            if( !Enum.TryParse<RoleEnum>( user.Role, out var roleEnum ) )
-            {
-                roleEnum = RoleEnum.Guest; // پیش‌فرض اگر مقدار معتبر نبود
-            }
+            var roleEnum = Enum.TryParse<RoleEnum>( user.Role, true, out var parsedRole )
+                ? parsedRole
+                : RoleEnum.Guest;
+
 
             // ✅ ایجاد کلیم‌ها با TenantId جدید (در صورت نیاز)
             var claims = new List<Claim>

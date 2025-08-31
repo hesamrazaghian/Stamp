@@ -42,11 +42,11 @@ namespace Stamp.Application.Handlers.Users
             if( !passwordValid )
                 throw new UnauthorizedAccessException( "Invalid credentials" );
 
-            // 🔹 اگر نقش موجود در دیتابیس معتبر نباشه → Guest
-            if( !Enum.TryParse<RoleEnum>( user.Role, true, out var roleEnum ) )
-            {
-                roleEnum = RoleEnum.Guest;
-            }
+            // 🔹 اطمینان از معتبر بودن نقش کاربر
+            var roleEnum = Enum.TryParse<RoleEnum>( user.Role, true, out var parsedRole )
+                ? parsedRole
+                : RoleEnum.Guest;
+
 
             // ✅ اگر TenantId نبود → Guid.Empty
             var tenantId = request.TenantId ?? Guid.Empty;

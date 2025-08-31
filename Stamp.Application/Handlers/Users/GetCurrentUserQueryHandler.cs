@@ -22,11 +22,10 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
         if( user == null )
             throw new Exception( "کاربر یافت نشد" );
 
-        // 🎯 نقش را از DB بخوان و اگر معتبر نبود → Guest
-        if( !Enum.TryParse<RoleEnum>( user.Role, true, out var roleEnum ) )
-        {
-            roleEnum = RoleEnum.Guest;
-        }
+        var roleEnum = Enum.TryParse<RoleEnum>( user.Role, true, out var parsedRole )
+            ? parsedRole
+            : RoleEnum.Guest;
+
 
         return new UserProfileDto
         {
