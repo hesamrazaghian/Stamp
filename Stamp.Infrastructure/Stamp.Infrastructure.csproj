@@ -45,8 +45,6 @@
     <Folder Include="Authorization\" />
     <Folder Include="Data\Factories\" />
     <Folder Include="Middleware\" />
-    <Folder Include="Repositories\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

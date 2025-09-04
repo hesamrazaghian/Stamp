@@ -1,4 +1,6 @@
 ﻿using Microsoft.OpenApi.Models;
+using Stamp.Application.Interfaces;
+using Stamp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -13,6 +15,8 @@ builder.Services.AddSwaggerGen( c =>
         Version = "v1"
     } );
 } );
+
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
 
 var app = builder.Build( );
 

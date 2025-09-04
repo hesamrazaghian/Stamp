@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
-    <Folder Include="Extensions\" />
+    <Folder Include="Extensions\NewFolder\" />
   </ItemGroup>
 
   <!-- 📦 پکیج‌ها - هماهنگ با .NET 9 -->
