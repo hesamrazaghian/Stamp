@@ -25,4 +25,16 @@
     <ProjectReference Include="..\Stamp.Domain\Stamp.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Authorization\" />
+    <Folder Include="Commands\Users\" />
+    <Folder Include="DTOs\" />
+    <Folder Include="Handlers\Tenants\" />
+    <Folder Include="Handlers\Users\" />
+    <Folder Include="Interfaces\" />
+    <Folder Include="Mappings\" />
+    <Folder Include="Queries\Users\" />
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
 </Project>

@@ -41,5 +41,12 @@
     <ProjectReference Include="..\Stamp.Application\Stamp.Application.csproj" />
     <ProjectReference Include="..\Stamp.Domain\Stamp.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Authorization\" />
+    <Folder Include="Data\Factories\" />
+    <Folder Include="Middleware\" />
+    <Folder Include="Repositories\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
 
 </Project>
