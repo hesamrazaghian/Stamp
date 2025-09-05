@@ -27,10 +27,8 @@
 
   <ItemGroup>
     <Folder Include="Authorization\" />
-    <Folder Include="DTOs\" />
     <Folder Include="Mappings\" />
     <Folder Include="Queries\Users\" />
-    <Folder Include="Validators\" />
   </ItemGroup>
 
 </Project>

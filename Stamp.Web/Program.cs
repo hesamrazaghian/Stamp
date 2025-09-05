@@ -1,12 +1,21 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Stamp.Application.Interfaces;
+using Stamp.Infrastructure.Data;
+using Stamp.Infrastructure.Repositories;
 using Stamp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder( args );
 
-// اضافه کردن سرویس‌های پایه
+#region Service Configuration
+
+// ================== Controllers & API Exploration ==================
+// Add controller services to handle API requests and enable API Explorer for Swagger.
 builder.Services.AddControllers( );
 builder.Services.AddEndpointsApiExplorer( );
+
+// ================== Swagger / OpenAPI Configuration ==================
+// Registers the Swagger generator with basic OpenAPI document metadata.
 builder.Services.AddSwaggerGen( c =>
 {
     c.SwaggerDoc( "v1", new OpenApiInfo
@@ -16,11 +25,24 @@ builder.Services.AddSwaggerGen( c =>
     } );
 } );
 
+// ================== Application Services ==================
+// Dependency Injection for repositories and service implementations.
+builder.Services.AddScoped<IUserRepository, UserRepository>( );
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
+
+// ================== Database Context Configuration ==================
+// Configure Entity Framework Core with SQL Server as the database provider.
+builder.Services.AddDbContext<ApplicationDbContext>( options =>
+    options.UseSqlServer( builder.Configuration.GetConnectionString( "DefaultConnection" ) ) );
+
+#endregion
 
 var app = builder.Build( );
 
-// فعال‌سازی Swagger
+#region Middleware Pipeline
+
+// ================== Swagger Middleware (Development Only) ==================
+// Enable Swagger UI and JSON docs only when in development mode.
 if( app.Environment.IsDevelopment( ) )
 {
     app.UseSwagger( );
@@ -30,8 +52,16 @@ if( app.Environment.IsDevelopment( ) )
     } );
 }
 
+// ================== Security & Routing Middleware ==================
+// Redirect HTTP to HTTPS for secure communication.
 app.UseHttpsRedirection( );
+
+// Enable Authorization middleware (requires authentication configuration in future).
 app.UseAuthorization( );
+
+// Map controller endpoints to routes.
 app.MapControllers( );
+
+#endregion
 
 app.Run( );

@@ -13,7 +13,7 @@ namespace Stamp.Infrastructure.Services
         {
             return await Task.Run( ( ) =>
             {
-                return BCrypt.Net.BCrypt.HashPassword( BCrypt.Net.BCrypt.GenerateSalt( ), password );
+                return BCrypt.Net.BCrypt.HashPassword( password, BCrypt.Net.BCrypt.GenerateSalt( ));
             } );
         }
         public async Task<bool> VerifyPasswordAsync( string hashedPassword, string providedPassword )
