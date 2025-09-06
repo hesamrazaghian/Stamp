@@ -1,24 +1,20 @@
-# Stamp – Multi‑Tenant Loyalty Management System
+**Stamp – Multi‑Business Loyalty Management System**  
 
-Stamp is a **multi‑tenant loyalty system** built with **.NET 8**, following the **Clean Architecture** approach.  
-It is designed to be modular, scalable, and secure, providing a robust base for building loyalty and reward platforms.
-
+Stamp is a **multi‑business loyalty and rewards platform** built with **.NET 8** following the **Clean Architecture** approach.  
+It is designed to be modular, scalable, and secure — providing a solid foundation for building multi‑business loyalty solutions.  
 ---
-
-## 📚 Features
-- **Multi‑Tenant architecture** with separate data scope per tenant  
-- **Clean Architecture layers**: Domain, Application, Infrastructure, Web  
+## 🚀 **Key Features**
+- **Multi‑Business architecture** – isolated data scope for each business  
+- **Clean Architecture** design – Domain, Application, Infrastructure, Web  
 - **Entity Framework Core 8** with SQL Server  
-- **JWT authentication & authorization**  
-- **User registration and login**  
-- **FluentValidation** for input validation  
-- **AutoMapper** for object mapping  
+- **JWT authentication & role‑based authorization**  
+- **User registration & login**  
+- **FluentValidation** for request validation  
+- **AutoMapper** for clean object mapping  
 - **BCrypt** for secure password hashing  
-- **Swagger/OpenAPI** for API documentation  
-
+- **Swagger/OpenAPI** documentation  
 ---
-
-## 🏗️ Architecture
+## 🏗 **Architecture Overview**
 ```text
 Stamp.Domain
 │   Entities, Value Objects, BaseEntity
@@ -30,24 +26,21 @@ Stamp.Infrastructure
 │   EF Core DbContext, Repositories, Services, Persistence
 │
 Stamp.Web
-    API Controllers, Program.cs, DI configuration
-
-
-⚙️ Tech Stack
-- **.NET 9 / C# 13**
-- **Entity Framework Core 9**
-- **MediatR 13**
-- **FluentValidation 12**
-- **AutoMapper 12**
-- **BCrypt.Net-Next 4**
-- **JWT** (System.IdentityModel.Tokens.Jwt)
-- **Swagger / Swashbuckle.AspNetCore 9**
-
+    API Controllers, Program.cs, Dependency Injection
 ---
-
-## 📦 Projects
-- **Stamp.Domain** – Core business entities and domain logic
-- **Stamp.Application** – Application services, CQRS handlers, DTOs, validators
-- **Stamp.Infrastructure** – EF Core, repositories, external services, migrations
-- **Stamp.Web** – API controllers, dependency injection, startup configuration
+## 🛠 **Tech Stack**
+- **.NET 9 / C# 13**  
+- **Entity Framework Core 9**  
+- **MediatR 13 – CQRS pattern**  
+- **FluentValidation 12**  
+- **AutoMapper 12**  
+- **BCrypt.Net-Next 4** for password hashing  
+- **JWT** (`System.IdentityModel.Tokens.Jwt`)  
+- **Swagger / Swashbuckle.AspNetCore 9**  
+---
+## 📦 **Projects**
+- **Stamp.Domain** – Core business entities & domain rules  
+- **Stamp.Application** – Application services, CQRS handlers, DTOs, validators  
+- **Stamp.Infrastructure** – EF Core, repositories, persistence, integrations  
+- **Stamp.Web** – API controllers, dependency injection, startup configuration  
 
