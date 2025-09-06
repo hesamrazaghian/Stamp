@@ -45,6 +45,7 @@
     <Folder Include="Authorization\" />
     <Folder Include="Data\Factories\" />
     <Folder Include="Middleware\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

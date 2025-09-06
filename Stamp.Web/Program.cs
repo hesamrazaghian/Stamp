@@ -47,9 +47,6 @@ var app = builder.Build( );
 #region Middleware Pipeline
 
 // ================== Global Exception Handling ==================
-// Disable ASP.NET Core default Developer Exception Page to ensure all errors are handled by custom middleware.
-app.UseExceptionHandler( _ => { } );
-
 // Set the custom ExceptionHandlingMiddleware as the first middleware to handle all exceptions globally.
 app.UseMiddleware<ExceptionHandlingMiddleware>( );
 

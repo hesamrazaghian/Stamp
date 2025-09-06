@@ -55,6 +55,18 @@ namespace Stamp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2025, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "hesam.rq1366@gmail.com",
+                            IsDeleted = false,
+                            PasswordHash = "$2a$11$rOpRlknEomwoXaAxGNpBxeI78k5P/wLu4z7ZoaCcpwiYJy9ATymuC",
+                            Phone = "09125782204",
+                            Role = 2
+                        });
                 });
 #pragma warning restore 612, 618
         }
