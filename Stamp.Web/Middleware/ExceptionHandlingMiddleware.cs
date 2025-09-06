@@ -43,9 +43,9 @@ namespace Stamp.Web.Middleware
 
             var errorResponse = new
             {
-                status = statusCode,
+                status = (int)statusCode,
                 error = message,
-                traceId = context.TraceIdentifier // برای دیباگ بهتر
+                traceId = context.TraceIdentifier
             };
 
             var json = JsonSerializer.Serialize( errorResponse );
