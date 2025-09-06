@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Stamp.Application.Commands.Users;
 using Stamp.Application.Interfaces;
 using Stamp.Infrastructure.Data;
 using Stamp.Infrastructure.Repositories;
@@ -13,6 +14,9 @@ var builder = WebApplication.CreateBuilder( args );
 // Add controller services to handle API requests and enable API Explorer for Swagger.
 builder.Services.AddControllers( );
 builder.Services.AddEndpointsApiExplorer( );
+builder.Services.AddScoped<IJwtService, JwtService>( );
+builder.Services.AddMediatR( cfg => cfg.RegisterServicesFromAssembly( typeof( RegisterUserCommand ).Assembly ) );
+
 
 // ================== Swagger / OpenAPI Configuration ==================
 // Registers the Swagger generator with basic OpenAPI document metadata.
