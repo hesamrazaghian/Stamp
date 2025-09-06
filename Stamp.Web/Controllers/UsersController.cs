@@ -23,5 +23,18 @@ namespace Stamp.Web.Controllers
         {
             return Ok( await _mediator.Send( command ) );
         }
+
+        [HttpDelete( "{id:guid}" )]
+        [ProducesResponseType( StatusCodes.Status200OK )]
+        [ProducesResponseType( StatusCodes.Status404NotFound )]
+        public async Task<IActionResult> Delete( Guid id )
+        {
+            var result = await _mediator.Send( new DeleteUserCommand { UserId = id } );
+            if( !result )
+                return NotFound( );
+
+            return Ok( new { message = "User deleted successfully" } );
+        }
+
     }
 }

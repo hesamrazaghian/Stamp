@@ -1,10 +1,5 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.Users;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Stamp.Application.Interfaces;
 
 namespace Stamp.Application.Handlers.Users
@@ -18,9 +13,14 @@ namespace Stamp.Application.Handlers.Users
             _userRepository = userRepository;
         }
 
-        public Task<bool> Handle( DeleteUserCommand request, CancellationToken cancellationToken )
+        public async Task<bool> Handle( DeleteUserCommand request, CancellationToken cancellationToken )
         {
-            throw new NotImplementedException( );
+            var user = await _userRepository.GetByIdAsync( request.UserId, cancellationToken );
+            if( user == null )
+                return false;
+
+            await _userRepository.SoftDeleteAsync( request.UserId, cancellationToken );
+            return true;
         }
     }
 }
