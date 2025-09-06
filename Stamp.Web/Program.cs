@@ -6,6 +6,7 @@ using Stamp.Infrastructure.Data;
 using Stamp.Infrastructure.Repositories;
 using Stamp.Infrastructure.Services;
 using Stamp.Web.Middleware;
+using System;
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -17,7 +18,6 @@ builder.Services.AddControllers( );
 builder.Services.AddEndpointsApiExplorer( );
 builder.Services.AddScoped<IJwtService, JwtService>( );
 builder.Services.AddMediatR( cfg => cfg.RegisterServicesFromAssembly( typeof( RegisterUserCommand ).Assembly ) );
-
 
 // ================== Swagger / OpenAPI Configuration ==================
 // Registers the Swagger generator with basic OpenAPI document metadata.
@@ -46,6 +46,13 @@ var app = builder.Build( );
 
 #region Middleware Pipeline
 
+// ================== Global Exception Handling ==================
+// Disable ASP.NET Core default Developer Exception Page to ensure all errors are handled by custom middleware.
+app.UseExceptionHandler( _ => { } );
+
+// Set the custom ExceptionHandlingMiddleware as the first middleware to handle all exceptions globally.
+app.UseMiddleware<ExceptionHandlingMiddleware>( );
+
 // ================== Swagger Middleware (Development Only) ==================
 // Enable Swagger UI and JSON docs only when in development mode.
 if( app.Environment.IsDevelopment( ) )
@@ -56,9 +63,6 @@ if( app.Environment.IsDevelopment( ) )
         c.SwaggerEndpoint( "/swagger/v1/swagger.json", "My API V1" );
     } );
 }
-
-// Centralized exception handling middleware
-app.UseMiddleware<ExceptionHandlingMiddleware>( );
 
 // ================== Security & Routing Middleware ==================
 // Redirect HTTP to HTTPS for secure communication.

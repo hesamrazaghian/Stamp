@@ -43,7 +43,7 @@ namespace Stamp.Web.Middleware
 
             var errorResponse = new
             {
-                status = (int)statusCode,
+                status = statusCode,
                 error = message,
                 traceId = context.TraceIdentifier
             };
