@@ -5,6 +5,7 @@ using Stamp.Application.Interfaces;
 using Stamp.Infrastructure.Data;
 using Stamp.Infrastructure.Repositories;
 using Stamp.Infrastructure.Services;
+using Stamp.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -55,6 +56,9 @@ if( app.Environment.IsDevelopment( ) )
         c.SwaggerEndpoint( "/swagger/v1/swagger.json", "My API V1" );
     } );
 }
+
+// Centralized exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>( );
 
 // ================== Security & Routing Middleware ==================
 // Redirect HTTP to HTTPS for secure communication.

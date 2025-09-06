@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Stamp.Application.Commands.Users;
 using Stamp.Application.DTOs;
+using Stamp.Application.Exceptions;
 using Stamp.Application.Interfaces;
 using Stamp.Domain.Entities;
 using Stamp.Domain.Enums;
@@ -27,10 +28,12 @@ namespace Stamp.Application.Handlers.Users
         {
             // 1. Check if user already exists by email
             var existingUser = await _userRepository.GetByEmailAsync( request.Email, cancellationToken );
+
             if( existingUser != null )
-            {
                 throw new Exception( "A user with this email already exists." );
-            }
+
+            if( request.Role == RoleEnum.Admin )
+                throw new InvalidRoleAssignmentException( "You are not allowed to assign Admin role." );
 
             // 2. Hash password securely using IPasswordHasher service
             var passwordHash = await _passwordHasher.HashPasswordAsync( request.Password );
