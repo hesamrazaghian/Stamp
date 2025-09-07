@@ -27,8 +27,6 @@
 
   <ItemGroup>
     <Folder Include="Authorization\" />
-    <Folder Include="Mappings\" />
-    <Folder Include="Queries\Users\" />
   </ItemGroup>
 
 </Project>

@@ -7,6 +7,7 @@ using Stamp.Infrastructure.Repositories;
 using Stamp.Infrastructure.Services;
 using Stamp.Web.Middleware;
 using System;
+using Stamp.Application.Mappings;
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -34,6 +35,7 @@ builder.Services.AddSwaggerGen( c =>
 // Dependency Injection for repositories and service implementations.
 builder.Services.AddScoped<IUserRepository, UserRepository>( );
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>( );
+builder.Services.AddAutoMapper( typeof( UserProfile ) );
 
 // ================== Database Context Configuration ==================
 // Configure Entity Framework Core with SQL Server as the database provider.
