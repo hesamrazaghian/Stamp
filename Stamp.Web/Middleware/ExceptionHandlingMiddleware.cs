@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Stamp.Application.DTOs;
 using Stamp.Application.Exceptions;
 using System.Net;
 using System.Text.Json;
 
 namespace Stamp.Web.Middleware
 {
+    /// <summary>
+    /// Middleware for handling global exceptions and formatting responses.
+    /// </summary>
     public class ExceptionHandlingMiddleware
     {
         private readonly RequestDelegate _next;
@@ -28,6 +33,17 @@ namespace Stamp.Web.Middleware
                 _logger.LogWarning( ex, "Forbidden role assignment attempt." );
                 await WriteErrorResponseAsync( context, HttpStatusCode.Forbidden, ex.Message );
             }
+            catch( ValidationException validationEx ) // Handling FluentValidation errors
+            {
+                _logger.LogWarning( validationEx, "Validation failed." );
+                var errors = validationEx.Errors.Select( e => e.ErrorMessage ).ToList( );
+                await WriteErrorResponseAsync( context, HttpStatusCode.BadRequest, "Validation failed", errors );
+            }
+            catch( KeyNotFoundException ex )
+            {
+                _logger.LogWarning( ex, "Resource not found." );
+                await WriteErrorResponseAsync( context, HttpStatusCode.NotFound, ex.Message );
+            }
             catch( Exception ex )
             {
                 _logger.LogError( ex, "Unhandled exception occurred." );
@@ -36,19 +52,24 @@ namespace Stamp.Web.Middleware
             }
         }
 
-        private static Task WriteErrorResponseAsync( HttpContext context, HttpStatusCode statusCode, string message )
+        private static Task WriteErrorResponseAsync( HttpContext context, HttpStatusCode statusCode, string message, List<string>? errors = null )
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = ( int )statusCode;
 
-            var errorResponse = new
+            var errorResponse = new ErrorResponse
             {
-                status = statusCode,
-                error = message,
-                traceId = context.TraceIdentifier
+                Success = false,
+                Message = message,
+                Errors = errors ?? new List<string>( ),
+                TraceId = context.TraceIdentifier
             };
 
-            var json = JsonSerializer.Serialize( errorResponse );
+            var json = JsonSerializer.Serialize( errorResponse, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            } );
+
             return context.Response.WriteAsync( json );
         }
     }

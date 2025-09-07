@@ -27,6 +27,7 @@ namespace Stamp.Application.Interfaces
         /// </summary>
         Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken );
 
+
         /// <summary>
         /// Check if a user exists with specific email
         /// </summary>
@@ -60,5 +61,6 @@ namespace Stamp.Application.Interfaces
         /// Hard delete a user (remove from database)
         /// </summary>
         Task HardDeleteAsync( Guid id, CancellationToken cancellationToken );
+
     }
 }

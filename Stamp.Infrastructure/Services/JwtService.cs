@@ -1,70 +1,68 @@
-﻿using Microsoft.Extensions.Configuration; 
-using Microsoft.IdentityModel.Tokens;    
-using Stamp.Application.Interfaces;      
-using Stamp.Domain.Enums;                
-using System.IdentityModel.Tokens.Jwt;    
-using System.Security.Claims;             
-using System.Text;                        
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Stamp.Application.DTOs;
+using Stamp.Application.Interfaces;
+using Stamp.Domain.Enums;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Stamp.Infrastructure.Services
 {
     public class JwtService : IJwtService
     {
-        private readonly IConfiguration _configuration; // Holds configuration data from appsettings.json
+        // Holds the strongly typed JWT settings from configuration
+        private readonly JwtSettings _jwtSettings;
 
-        public JwtService( IConfiguration configuration )
+        // Constructor - inject JwtSettings via IOptions
+        public JwtService( IOptions<JwtSettings> jwtSettings )
         {
-            _configuration = configuration; // Inject configuration into the service
+            _jwtSettings = jwtSettings.Value;
         }
 
-        // Generate token using default lifetime from appsettings.json
+        // Generate token using default expiration from configuration
         public string GenerateToken( Guid userId, RoleEnum role, string? email )
         {
-            // Read token lifetime from configuration
-            var lifetimeConfig = _configuration[ "JwtSettings:TokenLifetimeMinutes" ];
-
-            // Parse lifetimeConfig to integer, default to 60 if invalid
-            if( !int.TryParse( lifetimeConfig, out var expireMinutes ) )
-                expireMinutes = 60;
-
-            // Call the overloaded method that accepts a custom lifetime
-            return GenerateToken( userId, role, email, expireMinutes );
-        }
-
-        // Generate token with a custom expiration time
-        public string GenerateToken( Guid userId, RoleEnum role, string? email, int expireMinutes )
-        {
-            // Read secret key from configuration
-            var secret = _configuration[ "JwtSettings:Secret" ];
-            if( string.IsNullOrEmpty( secret ) )
-                throw new Exception( "JWT Secret is not configured." );
-
-            // Create claims (user-related information stored in the token)
+            // Prepare claims list for JWT payload
             var claims = new List<Claim>
             {
-                new Claim("UserId", userId.ToString()),         // Custom claim for user ID
-                new Claim(ClaimTypes.Role, role.ToString())     // User role claim
+                // Custom claim for UserId
+                new Claim("UserId", userId.ToString()),
+                // Built-in role claim
+                new Claim(ClaimTypes.Role, role.ToString())
             };
 
-            // Optionally add email claim if provided
+            // Optionally add email claim if it is provided
             if( !string.IsNullOrWhiteSpace( email ) )
                 claims.Add( new Claim( ClaimTypes.Email, email ) );
 
-            // Create a symmetric security key using the secret
-            var key = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( secret ) );
+            // Create symmetric security key from SecretKey
+            var key = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( _jwtSettings.SecretKey ) );
 
-            // Create signing credentials using the key and HMAC SHA256 algorithm
+            // Signing credentials using HMAC SHA256
             var creds = new SigningCredentials( key, SecurityAlgorithms.HmacSha256 );
 
-            // Create the JWT token with claims and expiration date
+            // Create the JWT token
             var token = new JwtSecurityToken(
-                claims: claims,                                    // Token payload
-                expires: DateTime.UtcNow.AddMinutes( expireMinutes ), // Expiration date
-                signingCredentials: creds                           // Token signature
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes( _jwtSettings.ExpiresInMinutes ),
+                signingCredentials: creds
             );
 
-            // Return the serialized JWT token string
+            // Serialize and return the token
             return new JwtSecurityTokenHandler( ).WriteToken( token );
+        }
+
+        // Generate token with custom expiration
+        public string GenerateToken( Guid userId, RoleEnum role, string? email, int expireMinutes )
+        {
+            var originalExpiry = _jwtSettings.ExpiresInMinutes;
+            _jwtSettings.ExpiresInMinutes = expireMinutes;
+            var token = GenerateToken( userId, role, email );
+            _jwtSettings.ExpiresInMinutes = originalExpiry; // Restore original value
+            return token;
         }
     }
 }

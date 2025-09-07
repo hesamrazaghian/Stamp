@@ -8,6 +8,10 @@ using Stamp.Infrastructure.Services;
 using Stamp.Web.Middleware;
 using System;
 using Stamp.Application.Mappings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Stamp.Application.DTOs; // برای استفاده از کلاس JwtSettings
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -19,6 +23,37 @@ builder.Services.AddControllers( );
 builder.Services.AddEndpointsApiExplorer( );
 builder.Services.AddScoped<IJwtService, JwtService>( );
 builder.Services.AddMediatR( cfg => cfg.RegisterServicesFromAssembly( typeof( RegisterUserCommand ).Assembly ) );
+
+// ================== Bind JWT Settings (Configuration to Strongly Typed Class) ==================
+// Bind JwtSettings section from appsettings.json to JwtSettings class for dependency injection
+var jwtSettingsSection = builder.Configuration.GetSection( "JwtSettings" );
+builder.Services.Configure<JwtSettings>( jwtSettingsSection );
+
+// ================== JWT Authentication ==================
+// Configure JWT authentication scheme and token validation parameters
+builder.Services
+    .AddAuthentication( options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    } )
+    .AddJwtBearer( options =>
+    {
+        options.RequireHttpsMetadata = true; // فقط HTTPS
+        options.SaveToken = true;  // ذخیره توکن در context
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,   // بررسی صادرکننده توکن
+            ValidateAudience = true, // بررسی مخاطب توکن
+            ValidateIssuerSigningKey = true, // بررسی کلید امضا
+            ValidIssuer = jwtSettingsSection[ "Issuer" ],   // مقادیر از فایل appsettings.json
+            ValidAudience = jwtSettingsSection[ "Audience" ],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes( jwtSettingsSection[ "SecretKey" ]! )
+            )
+        };
+    } );
 
 // ================== Swagger / OpenAPI Configuration ==================
 // Registers the Swagger generator with basic OpenAPI document metadata.
@@ -67,7 +102,11 @@ if( app.Environment.IsDevelopment( ) )
 // Redirect HTTP to HTTPS for secure communication.
 app.UseHttpsRedirection( );
 
-// Enable Authorization middleware (requires authentication configuration in future).
+// ================== Authentication & Authorization Middleware ==================
+// Enable authentication for validating JWT tokens
+app.UseAuthentication( );
+
+// Enable Authorization middleware to handle role-based or policy-based authorization
 app.UseAuthorization( );
 
 // Map controller endpoints to routes.
