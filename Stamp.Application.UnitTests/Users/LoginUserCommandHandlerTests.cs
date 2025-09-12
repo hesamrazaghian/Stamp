@@ -110,5 +110,60 @@ namespace Stamp.Application.UnitTests.Users
                 Times.Never
             );
         }
+
+        [Fact]
+        public async Task Handle_Should_Throw_UnauthorizedAccessException_When_Password_Is_Invalid( )
+        {
+            // Arrange - create mocks
+            var userRepositoryMock = new Mock<IUserRepository>( );
+            var passwordHasherMock = new Mock<IPasswordHasher>( );
+            var jwtServiceMock = new Mock<IJwtService>( );
+
+            // Arrange - prepare a fake existing user
+            var existingUser = new User
+            {
+                Id = Guid.NewGuid( ),
+                Email = "test@example.com",
+                PasswordHash = "hashed_password",
+                Role = RoleEnum.User
+            };
+
+            // Arrange - mock GetByEmailAsync to return user
+            userRepositoryMock
+                .Setup( r => r.GetByEmailAsync( "test@example.com", It.IsAny<CancellationToken>( ) ) )
+                .ReturnsAsync( existingUser );
+
+            // Arrange - mock password verification to return false (wrong password)
+            passwordHasherMock
+                .Setup( p => p.VerifyPasswordAsync( existingUser.PasswordHash, "wrongpassword" ) )
+                .ReturnsAsync( false );
+
+            var handler = new LoginUserCommandHandler(
+                userRepositoryMock.Object,
+                passwordHasherMock.Object,
+                jwtServiceMock.Object
+            );
+
+            var command = new LoginUserCommand
+            {
+                Email = "test@example.com",
+                Password = "wrongpassword"
+            };
+
+            // Act & Assert
+            var ex = await Should.ThrowAsync<UnauthorizedAccessException>( async ( ) =>
+            {
+                await handler.Handle( command, CancellationToken.None );
+            } );
+
+            ex.Message.ShouldBe( "Invalid email or password" );
+
+            // JWT token should not be generated
+            jwtServiceMock.Verify(
+                j => j.GenerateToken( It.IsAny<Guid>( ), It.IsAny<RoleEnum>( ), It.IsAny<string?>( ) ),
+                Times.Never
+            );
+        }
+
     }
 }
