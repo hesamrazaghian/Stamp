@@ -22,7 +22,7 @@ namespace Stamp.Application.UnitTests.Users
             // Setup mock: return null when searching by email (means user not exists)
             userRepositoryMock
                 .Setup( r => r.GetByEmailAsync( It.IsAny<string>( ), It.IsAny<CancellationToken>( ) ) )
-                .ReturnsAsync( ( User )null );
+                .ReturnsAsync( ( User? )null );
 
             // Setup mock: return a fake hashed password when hashing
             passwordHasherMock
