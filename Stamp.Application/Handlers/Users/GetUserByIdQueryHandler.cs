@@ -20,10 +20,14 @@ namespace Stamp.Application.Handlers.Users
 
         public async Task<UserDto?> Handle( GetUserByIdQuery request, CancellationToken cancellationToken )
         {
-            // Fetch user from repository
+            // ✅ 1. Validate input
+            if( request.UserId == Guid.Empty )
+                throw new ArgumentException( "UserId cannot be empty.", nameof( request.UserId ) );
+
+            // ✅ 2. Fetch user from repository
             var user = await _userRepository.GetByIdAsync( request.UserId, cancellationToken );
 
-            // Return null if not found, otherwise map to UserDto
+            // ✅ 3. Return null if not found, otherwise map to UserDto
             return user == null ? null : _mapper.Map<UserDto>( user );
         }
     }
