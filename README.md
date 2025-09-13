@@ -1,6 +1,6 @@
 **Stamp – Multi‑Business Loyalty Management System**  
 
-Stamp is a **multi‑business loyalty and rewards platform** built with **.NET 8** following the **Clean Architecture** approach.  
+Stamp is a **multi‑business loyalty and rewards platform** built with **.NET 9** following the **Clean Architecture** approach.  
 It is designed to be modular, scalable, and secure — providing a solid foundation for building multi‑business loyalty solutions.  
 ---
 ## 🚀 **Key Features**
