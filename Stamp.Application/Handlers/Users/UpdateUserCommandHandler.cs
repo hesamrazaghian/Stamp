@@ -34,7 +34,8 @@ namespace Stamp.Application.Handlers.Users
             if( !string.IsNullOrWhiteSpace( request.Phone ) )
                 user.Phone = request.Phone;
 
-            user.Role = request.Role; // Role update (we could optionally validate it)
+            if( request.Role.HasValue )
+                user.Role = request.Role.Value; // Role update (we could optionally validate it)
 
             // Save changes
             await _userRepository.UpdateAsync( user, cancellationToken );

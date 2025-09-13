@@ -22,7 +22,10 @@ namespace Stamp.Application.Validators
                 .MaximumLength( 20 ).WithMessage( "Phone number cannot exceed 20 characters." );
 
             RuleFor( x => x.Role )
-                .IsInEnum( ).WithMessage( "Invalid role specified." );
+                .IsInEnum( )
+                .When( x => x.Role.HasValue )
+                .WithMessage( "Invalid role specified." );
+
         }
     }
 }

@@ -19,6 +19,6 @@ namespace Stamp.Application.Commands.Users
         public string Phone { get; set; } = string.Empty;
 
         // Optional role update
-        public RoleEnum Role { get; set; }
+        public RoleEnum? Role { get; set; }
     }
 }
