@@ -15,6 +15,7 @@ It is designed to be modular, scalable, and secure — providing a solid foundat
 - **Swagger/OpenAPI** documentation  
 ---
 ## 🏗 **Architecture Overview**
+
 ```text
 Stamp.Domain
 │   Entities, Value Objects, BaseEntity
